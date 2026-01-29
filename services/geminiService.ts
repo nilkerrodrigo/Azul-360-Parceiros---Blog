@@ -1,19 +1,29 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Ensure API key is available
-const apiKey = process.env.API_KEY || '';
+// Helper to safely get the API instance
+// This prevents top-level crashes in browsers where 'process' is not defined
+const getAI = () => {
+  let apiKey = '';
+  try {
+    // Safe access for browser environments
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      apiKey = process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Could not access process.env");
+  }
 
-const ai = new GoogleGenAI({ apiKey });
+  // Fallback or empty string (will cause API calls to fail, but app won't crash on load)
+  return new GoogleGenAI({ apiKey });
+};
 
 /**
  * Generates a blog post draft based on a topic using Gemini 3 Pro.
  */
 export const generateBlogPost = async (topic: string, category: string): Promise<string> => {
-  if (!apiKey) {
-    throw new Error("API Key is missing. Please check your environment configuration.");
-  }
-
   try {
+    const ai = getAI();
+    
     const prompt = `
       Write a professional, engaging blog post for "Azul 360 Parceiros" (a corporate partner blog).
       Topic: ${topic}
@@ -40,7 +50,7 @@ export const generateBlogPost = async (topic: string, category: string): Promise
     return response.text || "Não foi possível gerar o conteúdo.";
   } catch (error) {
     console.error("Error generating blog post:", error);
-    throw new Error("Falha ao conectar com o Gemini AI.");
+    return "Erro ao conectar com o Gemini AI. Verifique se a chave de API está configurada corretamente.";
   }
 };
 
@@ -48,9 +58,8 @@ export const generateBlogPost = async (topic: string, category: string): Promise
  * Generates a short excerpt/summary for a blog post.
  */
 export const generateExcerpt = async (content: string): Promise<string> => {
-    if (!apiKey) return "Resumo indisponível (sem chave API).";
-
     try {
+        const ai = getAI();
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview', // Flash is sufficient for summarization
             contents: `Resuma o seguinte texto em um parágrafo curto e chamativo (máximo 120 caracteres) para um card de blog, em Português: ${content.substring(0, 1000)}...`
