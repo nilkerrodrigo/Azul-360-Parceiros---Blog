@@ -1,33 +1,36 @@
 import { Article, Category, Banner } from './types';
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'marketing', name: 'Marketing', icon: 'fa-bullhorn', description: 'Estratégias para vender mais' },
+  { id: 'cred-news', name: 'Cred News', icon: 'fa-newspaper', description: 'Notícias e novidades do setor' },
   { id: 'tecnologia', name: 'Tecnologia', icon: 'fa-laptop-code', description: 'Inovação no turismo' },
   { id: 'gestao', name: 'Gestão', icon: 'fa-chart-line', description: 'Eficiência operacional' },
-  { id: 'destinos', name: 'Destinos', icon: 'fa-map-marked-alt', description: 'Novos lugares para explorar' },
+  { id: 'mercados', name: 'Mercados', icon: 'fa-globe-americas', description: 'Tendências e oportunidades' },
 ];
 
 export const INITIAL_BANNERS: Banner[] = [
   {
-    id: 1,
+    id: '1',
     image: 'https://picsum.photos/1200/400?random=101',
     title: 'Campanha de Verão 2025',
     subtitle: 'Aumente suas vendas com pacotes exclusivos para o Nordeste.',
-    cta: 'Ver Condições'
+    cta: 'Ver Condições',
+    clicks: 124
   },
   {
-    id: 2,
+    id: '2',
     image: 'https://picsum.photos/1200/400?random=102',
     title: 'Novo Portal de Emissões',
     subtitle: 'Mais agilidade e autonomia para sua agência.',
-    cta: 'Acessar Agora'
+    cta: 'Acessar Agora',
+    clicks: 89
   },
   {
-    id: 3,
+    id: '3',
     image: 'https://picsum.photos/1200/400?random=103',
     title: 'Treinamento Disney 2024',
     subtitle: 'Torne-se um especialista e encante seus clientes.',
-    cta: 'Inscreva-se'
+    cta: 'Inscreva-se',
+    clicks: 256
   }
 ];
 
@@ -41,17 +44,19 @@ export const INITIAL_ARTICLES: Article[] = [
     imageUrl: 'https://picsum.photos/800/600?random=1',
     author: 'Ana Silva',
     date: '24 Out, 2023',
-    featured: true
+    featured: true,
+    views: 1205
   },
   {
     id: '2',
     title: 'O poder da personalização nas vendas de pacotes',
     excerpt: 'Entenda por que oferecer experiências únicas é a chave para fidelizar clientes no cenário atual.',
     content: 'Em um mundo cada vez mais conectado, o consumidor busca mais do que...',
-    category: 'Marketing',
+    category: 'Mercados',
     imageUrl: 'https://picsum.photos/800/600?random=2',
     author: 'Carlos Souza',
-    date: '22 Out, 2023'
+    date: '22 Out, 2023',
+    views: 980
   },
   {
     id: '3',
@@ -61,16 +66,18 @@ export const INITIAL_ARTICLES: Article[] = [
     category: 'Gestão',
     imageUrl: 'https://picsum.photos/800/600?random=3',
     author: 'Mariana Lima',
-    date: '20 Out, 2023'
+    date: '20 Out, 2023',
+    views: 850
   },
   {
     id: '4',
     title: 'Destinos em alta para o verão 2025',
     excerpt: 'Prepare sua agência para a alta temporada com estas dicas de destinos imperdíveis.',
     content: 'O verão de 2025 promete ser um dos mais movimentados da década...',
-    category: 'Destinos',
+    category: 'Cred News',
     imageUrl: 'https://picsum.photos/800/600?random=4',
     author: 'Roberto Dias',
-    date: '18 Out, 2023'
+    date: '18 Out, 2023',
+    views: 1540
   },
 ];

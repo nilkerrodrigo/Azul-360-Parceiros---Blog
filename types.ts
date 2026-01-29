@@ -8,6 +8,7 @@ export interface Article {
   author: string;
   date: string;
   featured?: boolean;
+  views?: number; // New metric
 }
 
 export interface Category {
@@ -18,11 +19,12 @@ export interface Category {
 }
 
 export interface Banner {
-  id: number;
+  id: string; // Changed from number to string for Firestore IDs
   image: string;
   title: string;
   subtitle: string;
   cta: string;
+  clicks?: number; // New metric
 }
 
 export type ViewState = 'HOME' | 'ADMIN' | 'ARTICLE_DETAIL' | 'LOGIN' | 'SEARCH_RESULTS';

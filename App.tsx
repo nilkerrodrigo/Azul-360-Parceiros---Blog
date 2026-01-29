@@ -1,22 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import ArticleCard from './components/ArticleCard';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
 import BannerSlider from './components/BannerSlider';
-import { INITIAL_ARTICLES, INITIAL_CATEGORIES, INITIAL_BANNERS } from './constants';
 import { Article, ViewState, Category, Banner } from './types';
+import { INITIAL_CATEGORIES } from './constants';
+import { 
+    getArticles, 
+    getCategories, 
+    getBanners, 
+    incrementArticleView, 
+    incrementBannerClick,
+    addCategory,
+    deleteCategory,
+    addArticle,
+    addBanner,
+    deleteBanner
+} from './services/apiService';
 
 function App() {
   const [view, setView] = useState<ViewState>('HOME');
-  const [articles, setArticles] = useState<Article[]>(INITIAL_ARTICLES);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [banners, setBanners] = useState<Banner[]>(INITIAL_BANNERS);
+  
+  // State driven by API
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Navigation Logic with Auth Check
+  // Initial Data Fetch
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+        // We use Promise.allSettled or just individual try-catches inside the services
+        // The service functions now return [] on error, so Promise.all won't throw
+        const [fetchedArticles, fetchedCategories, fetchedBanners] = await Promise.all([
+            getArticles(),
+            getCategories(),
+            getBanners()
+        ]);
+        
+        // If everything is empty, it might be a connection error that was swallowed, 
+        // or just an empty database.
+        setArticles(fetchedArticles);
+        
+        // Use INITIAL_CATEGORIES if API returns empty (for demo purposes or initial setup)
+        if (fetchedCategories.length > 0) {
+            setCategories(fetchedCategories);
+        } else {
+            setCategories(INITIAL_CATEGORIES);
+        }
+        
+        setBanners(fetchedBanners);
+    } catch (error: any) {
+        console.error("Critical error fetching data:", error);
+        setError("Não foi possível conectar ao servidor. Verifique sua conexão ou tente recarregar a página.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  // Navigation Logic
   const handleNavigate = (targetView: ViewState) => {
     if (targetView === 'ADMIN' && !isAuthenticated) {
       setView('LOGIN');
@@ -25,7 +79,7 @@ function App() {
     }
   };
 
-  const handleLogin = () => {
+  const handleLoginSuccess = () => {
     setIsAuthenticated(true);
     setView('ADMIN');
   };
@@ -35,31 +89,85 @@ function App() {
     setView('SEARCH_RESULTS');
   };
 
-  const handlePublish = (article: Article) => {
-    setArticles([article, ...articles]);
+  // --- Actions ---
+
+  const handlePublish = async (article: Article) => {
+    const { id, ...data } = article;
+    await addArticle(data);
+    await loadData();
     setView('HOME');
   };
 
-  const handleAddCategory = (name: string) => {
-    const newCategory: Category = {
-        id: name.toLowerCase().replace(/\s+/g, '-'),
+  const handleAddCategory = async (name: string) => {
+    const newCategory = {
         name: name,
-        icon: 'fa-tag', // Default icon for new categories
+        icon: 'fa-tag', 
         description: 'Nova categoria'
     };
-    setCategories([...categories, newCategory]);
+    await addCategory(newCategory);
+    await loadData();
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
       if (window.confirm('Tem certeza que deseja excluir esta categoria?')) {
-        setCategories(categories.filter(c => c.id !== id));
+        await deleteCategory(id);
+        await loadData();
       }
   };
 
+  const handleAddBanner = async (banner: Banner) => {
+      const { id, ...data } = banner;
+      await addBanner(data);
+      await loadData();
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+      await deleteBanner(id);
+      await loadData();
+  };
+
+  // Track Article Views
   const handleArticleClick = (article: Article) => {
-    setSelectedArticle(article);
+    // Optimistic update locally
+    setSelectedArticle({ ...article, views: (article.views || 0) + 1 });
+    incrementArticleView(article.id);
     setView('ARTICLE_DETAIL');
   };
+
+  // Track Banner Clicks
+  const handleBannerClick = (id: string) => {
+    incrementBannerClick(id);
+    console.log(`Banner ${id} clicked.`);
+  };
+
+  if (loading) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+              <div className="text-center">
+                  <i className="fas fa-circle-notch fa-spin text-4xl text-azul-500 mb-4"></i>
+                  <p className="text-gray-600">Conectando ao banco de dados...</p>
+              </div>
+          </div>
+      );
+  }
+
+  if (error) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+              <div className="text-center max-w-md bg-white p-8 rounded-xl shadow-lg border border-red-100">
+                  <i className="fas fa-wifi text-4xl text-red-400 mb-4"></i>
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">Erro de Conexão</h2>
+                  <p className="text-gray-600 mb-6">{error}</p>
+                  <button 
+                    onClick={loadData}
+                    className="bg-azul-900 text-white font-bold py-3 px-8 rounded-lg hover:bg-azul-700 transition w-full"
+                  >
+                    Tentar Novamente
+                  </button>
+              </div>
+          </div>
+      );
+  }
 
   const renderHome = () => {
     const featured = articles[0];
@@ -71,11 +179,12 @@ function App() {
         {/* Banner Slideshow Section */}
         <section className="pt-8 pb-4 bg-gray-50">
            <div className="container mx-auto px-4">
-              <BannerSlider banners={banners} />
+              <BannerSlider banners={banners} onBannerClick={handleBannerClick} />
            </div>
         </section>
 
         {/* Hero Section */}
+        {featured ? (
         <section className="bg-white pb-8 border-b pt-4">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -88,6 +197,7 @@ function App() {
                     src={featured.imageUrl} 
                     alt={featured.title} 
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                    onError={(e) => { e.currentTarget.src = 'https://picsum.photos/800/600?error'; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-8 w-full max-w-3xl">
@@ -131,6 +241,19 @@ function App() {
             </div>
           </div>
         </section>
+        ) : (
+            <div className="container mx-auto py-10 text-center text-gray-500">
+                <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 max-w-2xl mx-auto">
+                    <i className="fas fa-newspaper text-4xl text-gray-300 mb-4"></i>
+                    <p className="font-bold text-gray-700">Nenhum artigo encontrado</p>
+                    <p className="text-sm mt-2 text-gray-500">
+                        Se você acabou de instalar o sistema, acesse o 
+                        <button onClick={() => setView('LOGIN')} className="text-azul-500 font-bold hover:underline mx-1">Painel Admin</button> 
+                        para criar seu primeiro post.
+                    </p>
+                </div>
+            </div>
+        )}
 
         {/* Categories Section */}
         <section className="py-16 bg-gray-50">
@@ -139,15 +262,17 @@ function App() {
                  <h2 className="text-2xl font-bold text-gray-800">Escolha sua próxima leitura <span className="text-azul-500">por assunto</span></h2>
              </div>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {categories.map(cat => (
-                    <div key={cat.id} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex flex-col items-center text-center group border border-transparent hover:border-azul-200">
+                {categories.length > 0 ? categories.map(cat => (
+                    <div key={cat.id} onClick={() => handleSearch(cat.name)} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex flex-col items-center text-center group border border-transparent hover:border-azul-200">
                         <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-azul-500 group-hover:text-white transition-colors">
-                            <i className={`fas ${cat.icon} text-xl text-gray-600 group-hover:text-white`}></i>
+                            <i className={`fas ${cat.icon || 'fa-tag'} text-xl text-gray-600 group-hover:text-white`}></i>
                         </div>
                         <h3 className="font-bold text-gray-800 mb-2">{cat.name}</h3>
                         <p className="text-xs text-gray-500">{cat.description}</p>
                     </div>
-                ))}
+                )) : (
+                    <div className="col-span-4 text-center text-gray-400 text-sm">Nenhuma categoria cadastrada.</div>
+                )}
              </div>
           </div>
         </section>
@@ -160,44 +285,13 @@ function App() {
                     <a href="#" className="text-sm font-semibold text-gray-500 hover:text-azul-500">Ver todos</a>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {recentArticles.map(article => (
+                    {recentArticles.length > 0 ? recentArticles.map(article => (
                         <ArticleCard key={article.id} article={article} onClick={handleArticleClick} />
-                    ))}
-                </div>
-            </div>
-        </section>
-
-        {/* Columnists Section Mock */}
-        <section className="py-16 bg-azul-50">
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-12">
-                     <h2 className="text-2xl font-bold text-azul-900">Colunistas Parceiros</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="bg-azul-800 rounded-2xl p-8 flex items-center gap-6 text-white overflow-hidden relative shadow-lg">
-                        <img src="https://picsum.photos/150/150?random=10" alt="Colunista" className="w-24 h-24 rounded-full border-4 border-azul-500 object-cover z-10" />
-                        <div className="z-10">
-                            <span className="bg-azul-500 text-xs px-2 py-1 rounded mb-2 inline-block">Especialista em Vendas</span>
-                            <h3 className="text-xl font-bold mb-2">Fernanda Torres</h3>
-                            <p className="text-sm text-blue-100 mb-4">Insights semanais sobre conversão e atendimento.</p>
-                            <button className="text-sm font-bold hover:underline">Ler coluna</button>
-                        </div>
-                        <div className="absolute right-0 bottom-0 opacity-10">
-                            <i className="fas fa-quote-right text-9xl"></i>
-                        </div>
-                    </div>
-                    <div className="bg-azul-700 rounded-2xl p-8 flex items-center gap-6 text-white overflow-hidden relative shadow-lg">
-                        <img src="https://picsum.photos/150/150?random=11" alt="Colunista" className="w-24 h-24 rounded-full border-4 border-azul-400 object-cover z-10" />
-                        <div className="z-10">
-                            <span className="bg-azul-400 text-xs px-2 py-1 rounded mb-2 inline-block">Economia</span>
-                            <h3 className="text-xl font-bold mb-2">Ricardo Mello</h3>
-                            <p className="text-sm text-blue-100 mb-4">Análise de mercado e tendências para o turismo.</p>
-                            <button className="text-sm font-bold hover:underline">Ler coluna</button>
-                        </div>
-                        <div className="absolute right-0 bottom-0 opacity-10">
-                            <i className="fas fa-chart-pie text-9xl"></i>
-                        </div>
-                    </div>
+                    )) : (
+                         <div className="col-span-3 text-center text-gray-400 py-10">
+                            Ainda não há artigos recentes para exibir.
+                         </div>
+                    )}
                 </div>
             </div>
         </section>
@@ -251,7 +345,7 @@ function App() {
     return (
         <article className="bg-white min-h-screen pb-20">
             <div className="h-[400px] w-full relative">
-                <img src={selectedArticle.imageUrl} alt={selectedArticle.title} className="w-full h-full object-cover" />
+                <img src={selectedArticle.imageUrl} alt={selectedArticle.title} className="w-full h-full object-cover" onError={(e) => {e.currentTarget.src = 'https://picsum.photos/800/600?error'}} />
                 <div className="absolute inset-0 bg-black/50"></div>
                 <div className="absolute bottom-0 w-full p-8 md:p-16">
                     <div className="container mx-auto">
@@ -260,6 +354,7 @@ function App() {
                         <div className="flex items-center text-white/80 gap-4">
                             <span><i className="fas fa-user mr-2"></i>{selectedArticle.author}</span>
                             <span><i className="far fa-calendar mr-2"></i>{selectedArticle.date}</span>
+                            <span className="bg-white/20 px-2 py-1 rounded text-xs"><i className="fas fa-eye mr-1"></i> {selectedArticle.views} views</span>
                         </div>
                     </div>
                 </div>
@@ -295,7 +390,7 @@ function App() {
       
       <div className="flex-grow">
         {view === 'HOME' && renderHome()}
-        {view === 'LOGIN' && <Login onLogin={handleLogin} onCancel={() => setView('HOME')} />}
+        {view === 'LOGIN' && <Login onLogin={handleLoginSuccess} onCancel={() => setView('HOME')} />}
         {view === 'ADMIN' && (
             <AdminPanel 
                 onPublish={handlePublish} 
@@ -303,7 +398,10 @@ function App() {
                 onAddCategory={handleAddCategory} 
                 onDeleteCategory={handleDeleteCategory}
                 banners={banners}
-                onUpdateBanners={setBanners}
+                onUpdateBanners={() => {}} 
+                onAddBanner={handleAddBanner}
+                onDeleteBanner={handleDeleteBanner}
+                articles={articles}
             />
         )}
         {view === 'SEARCH_RESULTS' && renderSearchResults()}
@@ -324,14 +422,13 @@ function App() {
                 </p>
             </div>
             
-            {/* Dynamic Categories Column */}
             <div className="col-span-1">
                 <h4 className="font-bold mb-4 uppercase text-sm tracking-wider text-azul-500">Categorias</h4>
                 <ul className="space-y-2 text-sm text-gray-300">
                     {categories.map(cat => (
                         <li key={cat.id}>
                             <a href="#" onClick={() => { setSearchQuery(cat.name); setView('SEARCH_RESULTS'); }} className="hover:text-white transition flex items-center gap-2">
-                                <i className={`fas ${cat.icon} text-xs opacity-70`}></i>
+                                <i className={`fas ${cat.icon || 'fa-tag'} text-xs opacity-70`}></i>
                                 {cat.name}
                             </a>
                         </li>
@@ -356,10 +453,6 @@ function App() {
                             <i className="fab fa-instagram"></i>
                         </div>
                     </a>
-                    <div className="flex gap-3 mt-1">
-                         <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-azul-500 transition-colors"><i className="fab fa-facebook-f"></i></a>
-                         <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-azul-500 transition-colors"><i className="fab fa-youtube"></i></a>
-                    </div>
                 </div>
             </div>
           </div>

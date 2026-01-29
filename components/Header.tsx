@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
           {/* Logo Area */}
           <div className="flex items-center cursor-pointer py-2" onClick={() => onNavigate('HOME')}>
              <img 
-                src="http://azul360parceiros.com.br/wp-content/uploads/2026/01/parceiros-scaled.png" 
+                src="https://azul360parceiros.com.br/wp-content/uploads/2026/01/parceiros-scaled.png" 
                 alt="Azul 360 Parceiros" 
                 className="h-12 w-auto object-contain"
              />
@@ -60,9 +60,9 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
           <div className="flex items-center space-x-4">
             {!isSearchOpen && (
               <>
-                <i className="fab fa-facebook hover:text-azul-500 cursor-pointer transition hidden sm:block"></i>
-                <i className="fab fa-instagram hover:text-azul-500 cursor-pointer transition hidden sm:block"></i>
-                <i className="fab fa-linkedin hover:text-azul-500 cursor-pointer transition hidden sm:block"></i>
+                <a href="https://instagram.com/azul360.parceiros" target="_blank" rel="noopener noreferrer" className="text-gray-200 hover:text-white transition hidden sm:block">
+                    <i className="fab fa-instagram text-xl"></i>
+                </a>
                 <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
               </>
             )}
@@ -106,12 +106,10 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
       {currentView === 'HOME' && (
         <div className="bg-white text-gray-600 border-b border-gray-200 py-3 overflow-x-auto">
           <div className="container mx-auto px-4 flex justify-center space-x-8 text-xs font-bold uppercase whitespace-nowrap">
-            <a href="#" className="hover:text-azul-900">Mercado</a>
-            <a href="#" className="hover:text-azul-900">Gestão de Agências</a>
-            <a href="#" className="hover:text-azul-900">Tecnologia</a>
-            <a href="#" className="hover:text-azul-900">Eventos</a>
-            <a href="#" className="hover:text-azul-900">Colunistas</a>
-            <a href="#" className="hover:text-azul-900">Azul News</a>
+            <button onClick={() => onSearch('Cred News')} className="hover:text-azul-900 transition">Cred News</button>
+            <button onClick={() => onSearch('Tecnologia')} className="hover:text-azul-900 transition">Tecnologia</button>
+            <button onClick={() => onSearch('Gestão')} className="hover:text-azul-900 transition">Gestão</button>
+            <button onClick={() => onSearch('Mercados')} className="hover:text-azul-900 transition">Mercados</button>
           </div>
         </div>
       )}

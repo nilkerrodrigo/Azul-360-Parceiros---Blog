@@ -3,9 +3,10 @@ import { Banner } from '../types';
 
 interface BannerSliderProps {
     banners: Banner[];
+    onBannerClick?: (id: string) => void;
 }
 
-const BannerSlider: React.FC<BannerSliderProps> = ({ banners }) => {
+const BannerSlider: React.FC<BannerSliderProps> = ({ banners, onBannerClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -41,7 +42,10 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ banners }) => {
                         <span className="bg-yellow-500 text-azul-900 text-xs font-bold px-2 py-1 rounded mb-4 inline-block uppercase tracking-wider">Destaque Parceiro</span>
                         <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{banner.title}</h2>
                         <p className="text-lg md:text-xl mb-8 opacity-90">{banner.subtitle}</p>
-                        <button className="bg-white text-azul-900 hover:bg-azul-50 font-bold py-3 px-8 rounded-lg transition transform hover:scale-105 shadow-lg">
+                        <button 
+                            onClick={() => onBannerClick && onBannerClick(banner.id)}
+                            className="bg-white text-azul-900 hover:bg-azul-50 font-bold py-3 px-8 rounded-lg transition transform hover:scale-105 shadow-lg"
+                        >
                             {banner.cta}
                         </button>
                     </div>

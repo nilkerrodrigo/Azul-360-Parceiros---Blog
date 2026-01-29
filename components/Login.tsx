@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { loginUser } from '../services/apiService';
 
 interface LoginProps {
   onLogin: () => void;
@@ -6,17 +7,23 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, onCancel }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Hardcoded credentials for demonstration
-    if (username === 'admin' && password === 'azul360') {
+    setError('');
+    setLoading(true);
+
+    try {
+      await loginUser(email, password);
       onLogin();
-    } else {
-      setError('Credenciais inválidas. Tente admin / azul360');
+    } catch (err: any) {
+        setError(err.message || "Erro ao fazer login");
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -30,7 +37,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, onCancel }) => {
                 className="h-16 w-auto mx-auto mb-6 object-contain"
             />
             <h2 className="text-xl font-semibold text-gray-700">Acesso Restrito</h2>
-            <p className="text-sm text-gray-500">Faça login para gerenciar publicações.</p>
+            <p className="text-sm text-gray-500">
+                Faça login para gerenciar o blog.
+            </p>
         </div>
 
         {error && (
@@ -41,15 +50,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, onCancel }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Usuário</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">E-mail</label>
             <div className="relative">
-                <i className="fas fa-user absolute left-3 top-3.5 text-gray-400"></i>
+                <i className="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
                 <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-transparent outline-none transition"
-                    placeholder="Nome de usuário"
+                    placeholder="admin@azul360.com.br"
+                    required
                 />
             </div>
           </div>
@@ -64,24 +74,28 @@ const Login: React.FC<LoginProps> = ({ onLogin, onCancel }) => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-transparent outline-none transition"
                     placeholder="Sua senha"
+                    required
                 />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-azul-900 text-white font-bold py-3 rounded-lg hover:bg-azul-700 transition duration-300 shadow-md"
+            disabled={loading}
+            className={`w-full text-white font-bold py-3 rounded-lg transition duration-300 shadow-md ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-azul-900 hover:bg-azul-700'}`}
           >
-            Entrar no Painel
+            {loading ? 'Validando...' : 'Entrar no Painel'}
           </button>
           
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-full text-gray-500 text-sm hover:text-azul-900 transition"
-          >
-            Voltar para o site
-          </button>
+          <div className="flex justify-between items-center text-sm">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-gray-500 hover:text-azul-900 transition"
+              >
+                Voltar para o site
+              </button>
+          </div>
         </form>
       </div>
     </div>
