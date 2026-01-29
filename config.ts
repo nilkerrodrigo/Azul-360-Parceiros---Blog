@@ -4,13 +4,12 @@
 const isBrowser = typeof window !== 'undefined';
 
 // Determina se é produção verificando se o hostname inclui o domínio oficial
-// Agora verificamos especificamente o subdomínio 'blog' ou o principal
 const isProduction = isBrowser && (
   window.location.hostname.includes('azul360parceiros.com.br')
 );
 
 // Se for produção, use caminho relativo '/api'. 
-// Se for localhost, use o domínio CORRETO: blog.azul360parceiros.com.br
+// Se for localhost, use o domínio CORRETO: https://blog.azul360parceiros.com.br/api
 export const API_BASE_URL = isProduction
   ? '/api' 
   : 'https://blog.azul360parceiros.com.br/api';

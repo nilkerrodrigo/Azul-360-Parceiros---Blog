@@ -19,6 +19,7 @@ import {
     deleteBanner,
     deleteArticle
 } from './services/apiService';
+import { supabase } from './supabaseClient';
 
 function App() {
   const [view, setView] = useState<ViewState>('HOME');
@@ -36,14 +37,25 @@ function App() {
 
   // Initial Data Fetch
   useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        setIsAuthenticated(!!session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsAuthenticated(!!session);
+    });
+
     loadData();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-        // O serviço de API agora lida com erros e retorna dados mockados se necessário
         const [fetchedArticles, fetchedCategories, fetchedBanners] = await Promise.all([
             getArticles(),
             getCategories(),
@@ -54,9 +66,8 @@ function App() {
         setCategories(fetchedCategories);
         setBanners(fetchedBanners);
     } catch (error: any) {
-        console.error("Critical error fetching data:", error);
-        // Só mostramos erro se realmente não houver dados nenhum (nem mock)
-        setError("Não foi possível carregar a aplicação. Tente recarregar a página.");
+        console.error("Error fetching data:", error);
+        setError(`Falha ao carregar dados: ${error.message || 'Erro desconhecido'}`);
     } finally {
         setLoading(false);
     }
@@ -142,7 +153,7 @@ function App() {
           <div className="min-h-screen flex items-center justify-center bg-gray-50">
               <div className="text-center">
                   <i className="fas fa-circle-notch fa-spin text-4xl text-azul-500 mb-4"></i>
-                  <p className="text-gray-600">Carregando conteúdo...</p>
+                  <p className="text-gray-600">Carregando conteúdo do Supabase...</p>
               </div>
           </div>
       );
@@ -151,10 +162,12 @@ function App() {
   if (error) {
       return (
           <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-              <div className="text-center max-w-md bg-white p-8 rounded-xl shadow-lg border border-red-100">
+              <div className="text-center max-w-lg bg-white p-8 rounded-xl shadow-lg border border-red-100">
                   <i className="fas fa-wifi text-4xl text-red-400 mb-4"></i>
                   <h2 className="text-xl font-bold text-gray-800 mb-2">Erro de Conexão</h2>
-                  <p className="text-gray-600 mb-6">{error}</p>
+                  <div className="bg-gray-100 p-3 rounded text-left text-xs text-gray-600 font-mono mb-6 overflow-x-auto">
+                      {error}
+                  </div>
                   <button 
                     onClick={loadData}
                     className="bg-azul-900 text-white font-bold py-3 px-8 rounded-lg hover:bg-azul-700 transition w-full"

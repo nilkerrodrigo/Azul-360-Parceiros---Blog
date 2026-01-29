@@ -1,66 +1,21 @@
 import { Article, Category, Banner, User } from '../types';
-import { API_BASE_URL } from '../config';
-
-// Helper para chamadas de API
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-    // Remove barra final da base e inicial do endpoint para garantir url limpa
-    const baseUrl = API_BASE_URL.replace(/\/$/, '');
-    const cleanEndpoint = endpoint.replace(/^\//, '');
-    
-    // Cache buster
-    const separator = cleanEndpoint.includes('?') ? '&' : '?';
-    const cacheBuster = options.method === 'POST' ? '' : `${separator}t=${new Date().getTime()}`;
-    
-    const url = `${baseUrl}/${cleanEndpoint}${cacheBuster}`;
-    
-    try {
-        const response = await fetch(url, {
-            ...options,
-            mode: 'cors', // Habilita CORS explicitamente
-            credentials: 'omit', // Não envia cookies/auth, facilitando CORS com '*'
-            headers: {
-                'Accept': 'application/json',
-                ...options.headers
-            }
-        });
-
-        const text = await response.text();
-        
-        if (!response.ok) {
-            console.error(`[API Error ${response.status}] URL: ${url} | Body:`, text.substring(0, 200));
-            throw new Error(`Erro Servidor (${response.status})`);
-        }
-
-        try {
-            // Tenta parsear JSON
-            // Se o servidor retornou algo vazio mas ok (200), retorna null ou objeto vazio
-            if (!text.trim()) return {};
-            
-            const json = JSON.parse(text);
-            return json;
-        } catch (e) {
-            console.error(`[JSON Parse Error] URL: ${url}`);
-            console.error("Conteúdo recebido (HTML ou Texto):", text);
-            throw new Error("Resposta inválida do servidor. A API retornou HTML em vez de JSON.");
-        }
-    } catch (error: any) {
-        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-            console.error(`[Network Error] Falha crítica ao conectar em: ${url}`);
-            console.error("Dica: Verifique se o link https://azul360parceiros.com.br/api/index.php abre no navegador.");
-            throw new Error("Falha de conexão. O servidor recusou a conexão (Erro de CORS ou Servidor Offline).");
-        }
-        throw error;
-    }
-};
+import { supabase } from '../supabaseClient';
 
 // --- Articles ---
 
 export const getArticles = async (): Promise<Article[]> => {
-    const data = await apiRequest('articles.php');
-    if (!Array.isArray(data)) return [];
+    const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching articles:', error);
+        return [];
+    }
     
     return data.map((d: any) => ({
-        id: String(d.id),
+        id: d.id,
         title: d.title,
         excerpt: d.excerpt,
         content: d.content,
@@ -68,106 +23,114 @@ export const getArticles = async (): Promise<Article[]> => {
         imageUrl: d.image_url,
         author: d.author,
         date: d.publish_date,
-        views: Number(d.views || 0),
+        views: d.views,
         featured: false
     }));
 };
 
 export const addArticle = async (article: Omit<Article, 'id'>) => {
-    const payload = {
-        title: article.title,
-        excerpt: article.excerpt,
-        content: article.content,
-        category: article.category,
-        image_url: article.imageUrl,
-        author: article.author,
-        publish_date: article.date
-    };
-    return await apiRequest('articles.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    const { data, error } = await supabase
+        .from('articles')
+        .insert([{
+            title: article.title,
+            excerpt: article.excerpt,
+            content: article.content,
+            category: article.category,
+            image_url: article.imageUrl,
+            author: article.author,
+            publish_date: article.date,
+            views: 0
+        }])
+        .select();
+
+    if (error) throw error;
+    return data;
 };
 
 export const deleteArticle = async (id: string) => {
-    return await apiRequest('articles.php', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-    });
+    const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
 };
 
 export const incrementArticleView = async (id: string) => {
-    try {
-        await apiRequest('metrics.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'view', id })
-        });
-    } catch (e) {
-        // Ignora erros de métrica
-    }
+    // Usa uma RPC (Stored Procedure) para incremento atômico
+    const { error } = await supabase.rpc('increment_views', { row_id: id });
+    if (error) console.error("Error incrementing view:", error);
 };
 
 // --- Banners ---
 
 export const getBanners = async (): Promise<Banner[]> => {
-    const data = await apiRequest('banners.php');
-    if (!Array.isArray(data)) return [];
+    const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching banners:', error);
+        return [];
+    }
+
     return data.map((d: any) => ({
-        id: String(d.id),
+        id: d.id,
         image: d.image_url,
         title: d.title,
         subtitle: d.subtitle,
         cta: d.cta,
         link: d.link,
-        clicks: Number(d.clicks || 0)
+        clicks: d.clicks
     }));
 };
 
 export const addBanner = async (banner: Omit<Banner, 'id'>) => {
-    const payload = {
-        title: banner.title,
-        subtitle: banner.subtitle,
-        image_url: banner.image,
-        cta: banner.cta,
-        link: banner.link
-    };
-    return await apiRequest('banners.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    const { data, error } = await supabase
+        .from('banners')
+        .insert([{
+            image_url: banner.image,
+            title: banner.title,
+            subtitle: banner.subtitle,
+            cta: banner.cta,
+            link: banner.link,
+            clicks: 0
+        }])
+        .select();
+
+    if (error) throw error;
+    return data;
 };
 
 export const deleteBanner = async (id: string) => {
-    return await apiRequest('banners.php', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-    });
+    const { error } = await supabase
+        .from('banners')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
 };
 
 export const incrementBannerClick = async (id: string) => {
-    try {
-        await apiRequest('metrics.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'click', id })
-        });
-    } catch (e) {
-        // Ignora
-    }
+    const { error } = await supabase.rpc('increment_clicks', { row_id: id });
+    if (error) console.error("Error incrementing click:", error);
 };
 
 // --- Categories ---
 
 export const getCategories = async (): Promise<Category[]> => {
-    const data = await apiRequest('categories.php');
-    if (!Array.isArray(data)) return [];
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching categories:', error);
+        return [];
+    }
+
     return data.map((d: any) => ({
-        id: String(d.id),
+        id: d.id,
         name: d.name,
         icon: d.icon,
         description: d.description
@@ -175,87 +138,80 @@ export const getCategories = async (): Promise<Category[]> => {
 };
 
 export const addCategory = async (category: Omit<Category, 'id'>) => {
-    return await apiRequest('categories.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(category)
-    });
+    const { data, error } = await supabase
+        .from('categories')
+        .insert([category])
+        .select();
+
+    if (error) throw error;
+    return data;
 };
 
 export const deleteCategory = async (id: string) => {
-    return await apiRequest('categories.php', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-    });
+    const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+    if (error) throw error;
 };
 
 // --- Users & Auth ---
 
 export const getUsers = async (): Promise<User[]> => {
-    const data = await apiRequest('users.php');
-    if (!Array.isArray(data)) return [];
-    return data.map((d: any) => ({
-        id: String(d.id),
-        name: d.name,
-        email: d.email
-    }));
+    // Supabase não expõe lista de usuários publicamente por segurança.
+    // Retornamos apenas o usuário atual se logado, ou lista vazia.
+    // Para gerenciar múltiplos usuários, use o painel do Supabase em Authentication.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.email) {
+        return [{ id: user.id, name: 'Admin', email: user.email }];
+    }
+    return [];
 };
 
 export const addUser = async (name: string, email: string, password: string) => {
-    const result = await apiRequest('users.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-    });
-    if (!result.success) throw new Error(result.error);
-    return result;
+    // Em client-side só podemos criar usuário via SignUp, que loga automaticamente ou pede confirmação de email.
+    // A melhor forma de adicionar admins extras é convidá-los pelo painel do Supabase.
+    throw new Error("Por segurança, convide novos administradores através do Painel do Supabase (Authentication > Invite).");
 };
 
 export const deleteUser = async (id: string) => {
-    return await apiRequest('users.php', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-    });
+    throw new Error("Remova usuários pelo Painel do Supabase.");
 };
 
 export const loginUser = async (email: string, password: string) => {
-    const result = await apiRequest('login.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
     });
 
-    if (result.success) {
-        return result.user;
-    } else {
-        throw new Error(result.error || "Login falhou");
-    }
+    if (error) throw error;
+    return { id: data.user.id, email: data.user.email, name: 'Admin' };
+};
+
+export const logoutUser = async () => {
+    await supabase.auth.signOut();
 };
 
 // --- Upload ---
 
 export const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const baseUrl = API_BASE_URL.replace(/\/$/, '');
+    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
     
-    const response = await fetch(`${baseUrl}/upload.php`, {
-        method: 'POST',
-        body: formData,
-        mode: 'cors'
-    });
+    const { data, error } = await supabase
+        .storage
+        .from('blog-images')
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+        });
 
-    if (!response.ok) {
-        throw new Error("Erro no upload da imagem");
-    }
+    if (error) throw error;
 
-    const result = await response.json();
-    if (result.url) {
-        return result.url;
-    } else {
-        throw new Error(result.error || "Falha ao salvar imagem");
-    }
+    // Get Public URL
+    const { data: { publicUrl } } = supabase
+        .storage
+        .from('blog-images')
+        .getPublicUrl(fileName);
+
+    return publicUrl;
 };
