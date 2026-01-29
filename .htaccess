@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # IMPORTANTE: Ignora regras de reescrita para a pasta /api
+  # Isso garante que o servidor acesse os arquivos PHP reais em vez do React
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteRule ^ - [L]
+
+  # Regras padrão para React (Redireciona tudo para index.html)
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
