@@ -4,11 +4,14 @@ import { INITIAL_ARTICLES, INITIAL_BANNERS, INITIAL_CATEGORIES, INITIAL_USERS } 
 
 // Helper for Fetch
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-    const url = `${API_BASE_URL}/${endpoint}`;
+    // Remove barras duplicadas se existirem
+    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const url = `${baseUrl}/${endpoint}`;
+    
     try {
         const fetchOptions: RequestInit = {
             ...options,
-            mode: 'cors', // Garante que tentativas locais usem CORS
+            mode: 'cors', // Necessário para comunicação cross-origin se domínios forem diferentes
         };
 
         const response = await fetch(url, fetchOptions);
@@ -17,19 +20,19 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
         // Verifica erros HTTP
         if (!response.ok) {
              console.warn(`[API Warning] ${response.status} em ${url}:`, text);
-             throw new Error(`Erro ${response.status}: Falha ao conectar em ${url}`);
+             throw new Error(`Erro ${response.status}: Falha ao conectar com o servidor.`);
         }
 
         try {
             return JSON.parse(text);
         } catch (e) {
-            // Se a resposta não for JSON, pode ser um erro do servidor PHP ou 404
-            throw new Error(`Resposta inválida do servidor em ${endpoint}.`);
+            // Se a resposta não for JSON (ex: erro fatal do PHP impresso na tela), lança erro
+            console.error("Resposta inválida (não-JSON) do servidor:", text);
+            throw new Error(`O servidor retornou uma resposta inválida em ${endpoint}.`);
         }
     } catch (error: any) {
-        // Reduzimos o nível do log para warn para não assustar no console se for esperado (demo mode)
-        console.warn(`Falha na requisição API (${endpoint}):`, error.message);
-        throw error; // Re-throw to be handled by caller
+        console.error(`Falha na requisição API (${endpoint}):`, error.message);
+        throw error; 
     }
 };
 
@@ -49,10 +52,10 @@ export const getArticles = async (): Promise<Article[]> => {
             author: d.author,
             date: d.publish_date,
             views: Number(d.views || 0),
-            featured: false // Default
+            featured: false
         }));
     } catch (error) {
-        console.info("Usando dados de demonstração para Artigos (API indisponível).");
+        console.info("API Offline ou vazia. Usando dados iniciais.");
         return INITIAL_ARTICLES;
     }
 };
@@ -74,8 +77,21 @@ export const addArticle = async (article: Omit<Article, 'id'>) => {
             body: JSON.stringify(payload)
         });
     } catch (e) {
-        console.warn("Modo Demo: Artigo não salvo no servidor real.");
-        return { success: true, id: 'demo-' + Date.now() };
+        console.error("Erro ao salvar artigo no banco:", e);
+        throw e;
+    }
+};
+
+export const deleteArticle = async (id: string) => {
+    try {
+        return await apiRequest('articles.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+    } catch (e) {
+        console.error("Erro ao excluir artigo:", e);
+        throw e;
     }
 };
 
@@ -102,11 +118,10 @@ export const getBanners = async (): Promise<Banner[]> => {
             title: d.title,
             subtitle: d.subtitle,
             cta: d.cta,
-            link: d.link, // Mapped from PHP response
+            link: d.link,
             clicks: Number(d.clicks || 0)
         }));
     } catch (error) {
-        console.info("Usando dados de demonstração para Banners (API indisponível).");
         return INITIAL_BANNERS;
     }
 };
@@ -118,7 +133,7 @@ export const addBanner = async (banner: Omit<Banner, 'id'>) => {
             subtitle: banner.subtitle,
             image_url: banner.image,
             cta: banner.cta,
-            link: banner.link // Included in payload
+            link: banner.link 
         };
         return await apiRequest('banners.php', {
             method: 'POST',
@@ -126,8 +141,7 @@ export const addBanner = async (banner: Omit<Banner, 'id'>) => {
             body: JSON.stringify(payload)
         });
     } catch (e) {
-        console.warn("Modo Demo: Banner não salvo no servidor real.");
-        return { success: true };
+        throw e;
     }
 };
 
@@ -139,7 +153,7 @@ export const deleteBanner = async (id: string) => {
             body: JSON.stringify({ id })
         });
     } catch (e) {
-        return { success: true };
+        throw e;
     }
 };
 
@@ -167,7 +181,6 @@ export const getCategories = async (): Promise<Category[]> => {
             description: d.description
         }));
     } catch (error) {
-        console.info("Usando dados de demonstração para Categorias (API indisponível).");
         return INITIAL_CATEGORIES;
     }
 };
@@ -180,8 +193,7 @@ export const addCategory = async (category: Omit<Category, 'id'>) => {
             body: JSON.stringify(category)
         });
     } catch (e) {
-         console.warn("Modo Demo: Categoria não salva no servidor real.");
-         return { success: true };
+         throw e;
     }
 };
 
@@ -193,11 +205,11 @@ export const deleteCategory = async (id: string) => {
             body: JSON.stringify({ id })
         });
     } catch (e) {
-        return { success: true };
+        throw e;
     }
 };
 
-// --- Auth ---
+// --- Auth & Users ---
 export const loginUser = async (email: string, password: string) => {
     try {
         const result = await apiRequest('login.php', { 
@@ -206,22 +218,17 @@ export const loginUser = async (email: string, password: string) => {
             body: JSON.stringify({ email, password })
         });
         
+        // Se a API retornar success: false, lançamos erro com a mensagem do servidor
         if (result.success) {
             return result.user;
         } else {
-            throw new Error(result.message || "Falha no login");
+            throw new Error(result.error || "Credenciais inválidas");
         }
     } catch (e: any) {
-        // Fallback for Demo Mode login if API fails
-        if (email === 'admin@azul360.com.br' && password === 'admin') {
-            console.warn("API Offline: Login realizado em modo demonstração.");
-            return { id: 'demo-admin', name: 'Admin Demo', email: email };
-        }
         throw e;
     }
 };
 
-// --- Users (New) ---
 export const getUsers = async (): Promise<User[]> => {
     try {
         const data = await apiRequest('users.php');
@@ -232,21 +239,24 @@ export const getUsers = async (): Promise<User[]> => {
             email: d.email
         }));
     } catch (error) {
-        console.info("Usando dados de demonstração para Usuários (API indisponível).");
         return INITIAL_USERS;
     }
 };
 
 export const addUser = async (name: string, email: string, password: string) => {
     try {
-        return await apiRequest('users.php', {
+        const result = await apiRequest('users.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })
         });
+        
+        if (!result.success) {
+            throw new Error(result.error || "Erro ao criar usuário");
+        }
+        return result;
     } catch (e) {
-         console.warn("Modo Demo: Usuário não salvo no servidor real.");
-         return { success: true };
+         throw e;
     }
 };
 
@@ -258,7 +268,7 @@ export const deleteUser = async (id: string) => {
             body: JSON.stringify({ id })
         });
     } catch (e) {
-        return { success: true };
+        throw e;
     }
 };
 
@@ -270,7 +280,9 @@ export const uploadImage = async (file: File): Promise<string> => {
         formData.append('file', file);
 
         const endpoint = 'upload.php';
-        const url = `${API_BASE_URL}/${endpoint}`;
+        // Remove barras duplicadas para evitar //upload.php
+        const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+        const url = `${baseUrl}/${endpoint}`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -287,7 +299,7 @@ export const uploadImage = async (file: File): Promise<string> => {
         try {
             result = JSON.parse(text);
         } catch (e) {
-            throw new Error("Resposta inválida do servidor de upload: " + text);
+            throw new Error("Servidor retornou resposta inválida no upload.");
         }
 
         if (result.url) {
@@ -295,7 +307,8 @@ export const uploadImage = async (file: File): Promise<string> => {
         }
         throw new Error(result.error || "Falha no upload");
     } catch (e) {
-        console.warn("API de upload falhou, usando imagem local (Blob) para demonstração.");
+        console.error("Upload falhou:", e);
+        // Fallback apenas visual se o upload falhar
         return URL.createObjectURL(file);
     }
 };

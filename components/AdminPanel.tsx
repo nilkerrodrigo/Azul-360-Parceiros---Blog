@@ -13,7 +13,8 @@ interface AdminPanelProps {
   onAddBanner: (banner: Banner) => Promise<void>;
   onDeleteBanner: (id: string) => void;
   articles: Article[];
-  onExit: () => void; // Nova prop para voltar ao site
+  onExit: () => void; 
+  onDeleteArticle: (id: string) => void; // Nova prop
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -25,13 +26,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onAddBanner,
     onDeleteBanner,
     articles,
-    onExit
+    onExit,
+    onDeleteArticle
 }) => {
   const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ARTICLE' | 'BANNERS' | 'USERS'>('DASHBOARD');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showCatInput, setShowCatInput] = useState(false);
+  
+  // State para o filtro de categorias no Dashboard
+  const [categoryFilter, setCategoryFilter] = useState('Todas');
   
   // Users Management State
   const [users, setUsers] = useState<User[]>([]);
@@ -197,12 +202,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       }
   };
 
+  const handleDeleteArticle = (id: string) => {
+      if(window.confirm("Tem certeza que deseja excluir este artigo permanentemente?")) {
+          onDeleteArticle(id);
+      }
+  };
+
   const totalViews = articles.reduce((acc, curr) => acc + (curr.views || 0), 0);
   const totalBannerClicks = banners.reduce((acc, curr) => acc + (curr.clicks || 0), 0);
   const mostReadArticle = [...articles].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
 
+  // Lógica de filtro para a tabela
+  const filteredArticles = categoryFilter === 'Todas' 
+      ? articles 
+      : articles.filter(article => article.category === categoryFilter);
+
   return (
-    // Alterado max-w-4xl para max-w-7xl para expandir no desktop
+    // Max-w-7xl para layout mais largo
     <div className="bg-white rounded-lg shadow-xl p-8 max-w-7xl mx-auto my-10 border border-gray-100 relative">
       
       {isUploading && (
@@ -220,7 +236,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex justify-between items-center w-full">
                 <h2 className="text-3xl font-bold text-azul-900">Painel Administrativo</h2>
                 
-                {/* Botão Voltar ao Site (Mobile only via flex layout, but visible on Desktop via absolute/flex logic below) */}
+                {/* Botão Voltar ao Site (Mobile) */}
                 <button 
                     onClick={onExit}
                     className="md:hidden text-sm font-bold text-gray-500 hover:text-azul-900 flex items-center gap-2 border px-3 py-1 rounded-lg"
@@ -301,30 +317,64 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
               </div>
 
-              {/* Table of Articles */}
+              {/* Table of Articles with Filter */}
               <div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">Desempenho dos Artigos</h3>
+                  <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                      <h3 className="text-xl font-bold text-gray-800">Desempenho dos Artigos</h3>
+                      
+                      {/* Dropdown de Filtro */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500 font-semibold">Filtrar por:</span>
+                        <select 
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="p-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-azul-500 outline-none text-gray-700 font-medium"
+                        >
+                            <option value="Todas">Todas as Categorias</option>
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                            ))}
+                        </select>
+                      </div>
+                  </div>
+
                   <div className="overflow-x-auto rounded-lg border border-gray-200">
                       <table className="w-full text-left border-collapse">
                           <thead>
                               <tr className="bg-gray-50 text-gray-600 text-sm border-b">
-                                  <th className="p-4 font-semibold w-1/2">Título</th>
-                                  <th className="p-4 font-semibold">Categoria</th>
-                                  <th className="p-4 font-semibold">Autor</th>
-                                  <th className="p-4 font-semibold text-right">Views</th>
+                                  <th className="p-4 font-semibold w-5/12">Título</th>
+                                  <th className="p-4 font-semibold w-2/12">Categoria</th>
+                                  <th className="p-4 font-semibold w-2/12">Autor</th>
+                                  <th className="p-4 font-semibold w-1/12 text-center">Views</th>
+                                  <th className="p-4 font-semibold w-2/12 text-right">Ações</th>
                               </tr>
                           </thead>
                           <tbody className="text-sm">
-                              {articles.map((article) => (
+                              {filteredArticles.length > 0 ? filteredArticles.map((article) => (
                                   <tr key={article.id} className="border-b hover:bg-gray-50 transition">
                                       <td className="p-4 font-medium text-gray-800">{article.title}</td>
                                       <td className="p-4">
                                           <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">{article.category}</span>
                                       </td>
                                       <td className="p-4 text-gray-500">{article.author}</td>
-                                      <td className="p-4 text-right font-bold text-azul-700">{article.views || 0}</td>
+                                      <td className="p-4 text-center font-bold text-azul-700">{article.views || 0}</td>
+                                      <td className="p-4 text-right">
+                                          <button 
+                                            onClick={() => handleDeleteArticle(article.id)}
+                                            className="text-red-500 hover:text-red-700 font-bold text-xs uppercase border border-red-200 px-3 py-1 rounded hover:bg-red-50 transition"
+                                            title="Excluir Artigo"
+                                          >
+                                            <i className="fas fa-trash mr-1"></i> Remover
+                                          </button>
+                                      </td>
                                   </tr>
-                              ))}
+                              )) : (
+                                  <tr>
+                                      <td colSpan={5} className="p-8 text-center text-gray-400">
+                                          Nenhum artigo encontrado nesta categoria.
+                                      </td>
+                                  </tr>
+                              )}
                           </tbody>
                       </table>
                   </div>
@@ -452,8 +502,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             </div>
             
-            {/* Bloco de Assistente de Escrita AI Removido Conforme Solicitado */}
-
             <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Conteúdo do Artigo</label>
             <div className="relative">

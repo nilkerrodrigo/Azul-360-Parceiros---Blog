@@ -16,7 +16,8 @@ import {
     deleteCategory,
     addArticle,
     addBanner,
-    deleteBanner
+    deleteBanner,
+    deleteArticle
 } from './services/apiService';
 
 function App() {
@@ -87,6 +88,11 @@ function App() {
     await addArticle(data);
     await loadData();
     setView('HOME');
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    await deleteArticle(id);
+    await loadData();
   };
 
   const handleAddCategory = async (name: string) => {
@@ -169,7 +175,7 @@ function App() {
       <main>
         {/* Banner Slideshow Section */}
         <section className="pt-8 pb-4 bg-gray-50">
-           <div className="container mx-auto px-4">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <BannerSlider banners={banners} onBannerClick={handleBannerClick} />
            </div>
         </section>
@@ -177,7 +183,7 @@ function App() {
         {/* Hero Section */}
         {featured ? (
         <section className="bg-white pb-8 border-b pt-4">
-          <div className="container mx-auto px-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Featured Main */}
               <div 
@@ -217,7 +223,7 @@ function App() {
                     />
                  ))}
                  
-                 {/* App Banner Mock */}
+                 {/* App Banner Updated */}
                  <a 
                     href="https://negocios.azulse.com.br/" 
                     target="_blank" 
@@ -226,11 +232,11 @@ function App() {
                  >
                     <div className="bg-azul-900 rounded-xl p-6 text-white relative overflow-hidden transition transform group-hover:scale-[1.02] shadow-lg">
                         <div className="relative z-10">
-                            <h4 className="font-bold text-xl mb-2">Baixe o App Azul 360</h4>
-                            <p className="text-sm opacity-80 mb-4">Gestão na palma da sua mão.</p>
-                            <span className="text-xs bg-white text-azul-900 font-bold px-4 py-2 rounded-full inline-block">Download Now</span>
+                            <h4 className="font-bold text-xl mb-2">Plataforma Azul 360</h4>
+                            <p className="text-sm opacity-80 mb-4">Acesse agora a plataforma.</p>
+                            <span className="text-xs bg-white text-azul-900 font-bold px-4 py-2 rounded-full inline-block">Acessar Agora</span>
                         </div>
-                        <i className="fas fa-mobile-alt absolute -bottom-4 -right-4 text-9xl text-white opacity-10 rotate-12 group-hover:rotate-6 transition-transform"></i>
+                        <i className="fas fa-desktop absolute -bottom-4 -right-4 text-9xl text-white opacity-10 rotate-12 group-hover:rotate-6 transition-transform"></i>
                     </div>
                  </a>
               </div>
@@ -238,7 +244,7 @@ function App() {
           </div>
         </section>
         ) : (
-            <div className="container mx-auto py-10 text-center text-gray-500">
+            <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
                 <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 max-w-2xl mx-auto">
                     <i className="fas fa-newspaper text-4xl text-gray-300 mb-4"></i>
                     <p className="font-bold text-gray-700">Nenhum artigo encontrado</p>
@@ -253,7 +259,7 @@ function App() {
 
         {/* Categories Section */}
         <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-12">
                  <h2 className="text-2xl font-bold text-gray-800">Escolha sua próxima leitura <span className="text-azul-500">por assunto</span></h2>
              </div>
@@ -275,7 +281,7 @@ function App() {
 
         {/* Recent Articles */}
         <section className="py-16 bg-white">
-            <div className="container mx-auto px-4">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-end mb-10 border-b pb-4">
                     <h2 className="text-3xl font-bold text-azul-900">Artigos Recentes</h2>
                     <a href="#" className="text-sm font-semibold text-gray-500 hover:text-azul-500">Ver todos</a>
@@ -296,20 +302,50 @@ function App() {
   };
 
   const renderSearchResults = () => {
-    const filtered = articles.filter(a => 
-        a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        a.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Verifica se a busca corresponde exatamente ao nome de uma categoria
+    const categoryMatch = categories.find(c => c.name.toLowerCase() === searchQuery.toLowerCase());
+    
+    const filtered = articles.filter(a => {
+        if (categoryMatch) {
+            // Se for uma página de categoria, filtra ESTRITAMENTE pela categoria
+            return a.category.toLowerCase() === categoryMatch.name.toLowerCase();
+        }
+        // Caso contrário, mantêm a busca textual padrão
+        return a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               a.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               a.category.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     return (
         <section className="py-16 min-h-[60vh]">
-            <div className="container mx-auto px-4">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Botão de Voltar ao Site */}
+                <button 
+                    onClick={() => setView('HOME')}
+                    className="mb-6 flex items-center text-azul-600 hover:text-azul-800 transition font-semibold group"
+                >
+                    <i className="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i> Voltar ao Site
+                </button>
+
                 <div className="mb-8 border-b pb-4">
-                    <h2 className="text-3xl font-bold text-gray-800">Resultados da Busca</h2>
-                    <p className="text-gray-500 mt-2">
-                        Exibindo resultados para: <span className="text-azul-700 font-bold">"{searchQuery}"</span>
-                    </p>
+                    {categoryMatch ? (
+                         <>
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-3 bg-azul-100 rounded-lg text-azul-600">
+                                    <i className={`fas ${categoryMatch.icon} text-xl`}></i>
+                                </div>
+                                <h2 className="text-3xl font-bold text-gray-800">{categoryMatch.name}</h2>
+                            </div>
+                            <p className="text-gray-500">{categoryMatch.description}</p>
+                         </>
+                    ) : (
+                        <>
+                            <h2 className="text-3xl font-bold text-gray-800">Resultados da Busca</h2>
+                            <p className="text-gray-500 mt-2">
+                                Exibindo resultados para: <span className="text-azul-700 font-bold">"{searchQuery}"</span>
+                            </p>
+                        </>
+                    )}
                 </div>
                 
                 {filtered.length > 0 ? (
@@ -322,7 +358,11 @@ function App() {
                     <div className="text-center py-20 bg-gray-50 rounded-xl">
                         <i className="fas fa-search text-6xl text-gray-300 mb-4"></i>
                         <h3 className="text-xl font-semibold text-gray-600">Nenhum artigo encontrado</h3>
-                        <p className="text-gray-500 mt-2">Tente buscar por outros termos ou categorias.</p>
+                        <p className="text-gray-500 mt-2">
+                            {categoryMatch 
+                                ? "Ainda não há artigos publicados nesta categoria." 
+                                : "Tente buscar por outros termos ou categorias."}
+                        </p>
                         <button 
                             onClick={() => setView('HOME')}
                             className="mt-6 px-6 py-2 bg-azul-500 text-white rounded-lg hover:bg-azul-600 transition"
@@ -344,7 +384,7 @@ function App() {
                 <img src={selectedArticle.imageUrl} alt={selectedArticle.title} className="w-full h-full object-cover" onError={(e) => {e.currentTarget.src = 'https://picsum.photos/800/600?error'}} />
                 <div className="absolute inset-0 bg-black/50"></div>
                 <div className="absolute bottom-0 w-full p-8 md:p-16">
-                    <div className="container mx-auto">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <span className="bg-azul-500 text-white px-4 py-1 rounded text-sm font-bold uppercase mb-4 inline-block">{selectedArticle.category}</span>
                         <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 max-w-4xl">{selectedArticle.title}</h1>
                         <div className="flex items-center text-white/80 gap-4">
@@ -355,7 +395,7 @@ function App() {
                     </div>
                 </div>
             </div>
-            <div className="container mx-auto px-4 -mt-10 relative z-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
                 <div className="bg-white rounded-xl shadow-xl p-8 md:p-12 max-w-4xl mx-auto">
                     <p className="text-xl text-gray-600 font-serif leading-relaxed mb-8 border-l-4 border-azul-500 pl-4 italic">
                         {selectedArticle.excerpt}
@@ -400,6 +440,7 @@ function App() {
                 onDeleteBanner={handleDeleteBanner}
                 articles={articles}
                 onExit={() => setView('HOME')} // Passando a função de saída
+                onDeleteArticle={handleDeleteArticle} // Nova prop
             />
         )}
         {view === 'SEARCH_RESULTS' && renderSearchResults()}
@@ -407,7 +448,7 @@ function App() {
       </div>
 
       <footer className="bg-azul-900 text-white py-12 border-t-4 border-azul-500">
-        <div className="container mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-1">
                 <img 

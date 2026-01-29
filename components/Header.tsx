@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
 
   return (
     <header className="bg-azul-900 text-white sticky top-0 z-50 shadow-lg">
-      <div className="container mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Bar */}
         <div className="flex justify-between items-center h-20">
           {/* Logo Area */}
@@ -110,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
       {/* Sub-header categories (Only on Home) */}
       {currentView === 'HOME' && (
         <div className="bg-white text-gray-600 border-b border-gray-200 py-3 overflow-x-auto">
-          <div className="container mx-auto px-4 flex justify-center space-x-8 text-xs font-bold uppercase whitespace-nowrap">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center space-x-8 text-xs font-bold uppercase whitespace-nowrap">
             <button onClick={() => onSearch('Cred News')} className="hover:text-azul-900 transition">Cred News</button>
             <button onClick={() => onSearch('Tecnologia')} className="hover:text-azul-900 transition">Tecnologia</button>
             <button onClick={() => onSearch('Gestão')} className="hover:text-azul-900 transition">Gestão</button>
