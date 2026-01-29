@@ -39,15 +39,20 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ banners, onBannerClick }) =
             <div className="absolute inset-0 flex items-center">
                 <div className="container mx-auto px-8 md:px-16">
                     <div className="max-w-lg text-white">
-                        <span className="bg-yellow-500 text-azul-900 text-xs font-bold px-2 py-1 rounded mb-4 inline-block uppercase tracking-wider">Destaque Parceiro</span>
                         <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{banner.title}</h2>
                         <p className="text-lg md:text-xl mb-8 opacity-90">{banner.subtitle}</p>
-                        <button 
-                            onClick={() => onBannerClick && onBannerClick(banner.id)}
-                            className="bg-white text-azul-900 hover:bg-azul-50 font-bold py-3 px-8 rounded-lg transition transform hover:scale-105 shadow-lg"
+                        <a 
+                            href={banner.link || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => {
+                                if (!banner.link) e.preventDefault();
+                                if (onBannerClick) onBannerClick(banner.id);
+                            }}
+                            className="inline-block bg-white text-azul-900 hover:bg-azul-50 font-bold py-3 px-8 rounded-lg transition transform hover:scale-105 shadow-lg cursor-pointer"
                         >
                             {banner.cta}
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>

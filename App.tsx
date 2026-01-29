@@ -192,9 +192,7 @@ function App() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-8 w-full max-w-3xl">
-                  <span className="inline-block px-3 py-1 mb-4 text-xs font-bold tracking-wider text-white uppercase bg-azul-500 rounded">
-                    {featured.category}
-                  </span>
+                  {/* Category badge removed as requested */}
                   <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
                     {featured.title}
                   </h1>
@@ -220,14 +218,21 @@ function App() {
                  ))}
                  
                  {/* App Banner Mock */}
-                 <div className="mt-auto bg-azul-900 rounded-xl p-6 text-white relative overflow-hidden">
-                    <div className="relative z-10">
-                        <h4 className="font-bold text-xl mb-2">Baixe o App Azul 360</h4>
-                        <p className="text-sm opacity-80 mb-4">Gestão na palma da sua mão.</p>
-                        <button className="text-xs bg-white text-azul-900 font-bold px-4 py-2 rounded-full">Download Now</button>
+                 <a 
+                    href="https://negocios.azulse.com.br/" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="block mt-auto group"
+                 >
+                    <div className="bg-azul-900 rounded-xl p-6 text-white relative overflow-hidden transition transform group-hover:scale-[1.02] shadow-lg">
+                        <div className="relative z-10">
+                            <h4 className="font-bold text-xl mb-2">Baixe o App Azul 360</h4>
+                            <p className="text-sm opacity-80 mb-4">Gestão na palma da sua mão.</p>
+                            <span className="text-xs bg-white text-azul-900 font-bold px-4 py-2 rounded-full inline-block">Download Now</span>
+                        </div>
+                        <i className="fas fa-mobile-alt absolute -bottom-4 -right-4 text-9xl text-white opacity-10 rotate-12 group-hover:rotate-6 transition-transform"></i>
                     </div>
-                    <i className="fas fa-mobile-alt absolute -bottom-4 -right-4 text-9xl text-white opacity-10 rotate-12"></i>
-                 </div>
+                 </a>
               </div>
             </div>
           </div>
@@ -382,7 +387,7 @@ function App() {
       <div className="flex-grow">
         {view === 'HOME' && renderHome()}
         {view === 'LOGIN' && <Login onLogin={handleLoginSuccess} onCancel={() => setView('HOME')} />}
-        {view === 'ABOUT' && <About />}
+        {view === 'ABOUT' && <About onNavigate={handleNavigate} />}
         {view === 'ADMIN' && (
             <AdminPanel 
                 onPublish={handlePublish} 
@@ -394,6 +399,7 @@ function App() {
                 onAddBanner={handleAddBanner}
                 onDeleteBanner={handleDeleteBanner}
                 articles={articles}
+                onExit={() => setView('HOME')} // Passando a função de saída
             />
         )}
         {view === 'SEARCH_RESULTS' && renderSearchResults()}
@@ -410,7 +416,7 @@ function App() {
                     className="h-12 w-auto mb-4 object-contain brightness-0 invert"
                 />
                 <p className="text-gray-400 text-sm leading-relaxed">
-                    O Portal Azul 360 Parceiros é mantido pela Azul Viagens. Conteúdo exclusivo para o crescimento do seu negócio.
+                    O Portal Azul 360º Parceiros é mantido pela Azul 360º e reúne conteúdo exclusivo para acelerar o crescimento do seu negócio.
                 </p>
             </div>
             

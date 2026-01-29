@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateBlogPost, generateExcerpt } from '../services/geminiService';
+import { generateExcerpt } from '../services/geminiService';
 import { uploadImage, getUsers, addUser, deleteUser } from '../services/apiService';
 import { Article, Category, Banner, User } from '../types';
 
@@ -13,6 +13,7 @@ interface AdminPanelProps {
   onAddBanner: (banner: Banner) => Promise<void>;
   onDeleteBanner: (id: string) => void;
   articles: Article[];
+  onExit: () => void; // Nova prop para voltar ao site
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -23,12 +24,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     banners,
     onAddBanner,
     onDeleteBanner,
-    articles
+    articles,
+    onExit
 }) => {
   const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ARTICLE' | 'BANNERS' | 'USERS'>('DASHBOARD');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [generated, setGenerated] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showCatInput, setShowCatInput] = useState(false);
   
@@ -63,26 +64,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       subtitle: '',
       image: '',
       imageFile: null as File | null,
-      cta: 'Saiba Mais'
+      cta: 'Saiba Mais',
+      link: ''
   });
-
-  const handleGenerate = async () => {
-    if (!formData.title) {
-      alert("Por favor, insira um título ou tópico para a IA gerar o conteúdo.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const content = await generateBlogPost(formData.title, formData.category);
-      setFormData(prev => ({ ...prev, content }));
-      setGenerated(true);
-    } catch (error) {
-      alert("Erro ao gerar conteúdo.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAddCategorySubmit = (e: React.MouseEvent) => {
       e.preventDefault();
@@ -145,7 +129,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             imageUrl: '',
             imageFile: null
         });
-        setGenerated(false);
         setActiveTab('DASHBOARD');
     } catch (error) {
         console.error("Failed to publish", error);
@@ -175,11 +158,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             subtitle: newBanner.subtitle,
             image: finalImageUrl,
             cta: newBanner.cta,
+            link: newBanner.link,
             clicks: 0
         };
 
         await onAddBanner(bannerToAdd);
-        setNewBanner({ title: '', subtitle: '', image: '', imageFile: null, cta: 'Saiba Mais' });
+        setNewBanner({ title: '', subtitle: '', image: '', imageFile: null, cta: 'Saiba Mais', link: '' });
       } catch (error) {
         alert("Erro ao adicionar banner.");
       } finally {
@@ -218,7 +202,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const mostReadArticle = [...articles].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8 max-w-4xl mx-auto my-10 border border-gray-100 relative">
+    // Alterado max-w-4xl para max-w-7xl para expandir no desktop
+    <div className="bg-white rounded-lg shadow-xl p-8 max-w-7xl mx-auto my-10 border border-gray-100 relative">
       
       {isUploading && (
           <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center rounded-lg">
@@ -231,8 +216,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 border-b pb-4 gap-4">
-        <div>
-            <h2 className="text-3xl font-bold text-azul-900">Painel Administrativo</h2>
+        <div className="w-full md:w-auto">
+            <div className="flex justify-between items-center w-full">
+                <h2 className="text-3xl font-bold text-azul-900">Painel Administrativo</h2>
+                
+                {/* Botão Voltar ao Site (Mobile only via flex layout, but visible on Desktop via absolute/flex logic below) */}
+                <button 
+                    onClick={onExit}
+                    className="md:hidden text-sm font-bold text-gray-500 hover:text-azul-900 flex items-center gap-2 border px-3 py-1 rounded-lg"
+                >
+                    <i className="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+            
             <div className="flex gap-4 mt-4 overflow-x-auto">
                 <button 
                     onClick={() => setActiveTab('DASHBOARD')}
@@ -260,6 +256,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
             </div>
         </div>
+
+        {/* Botão Voltar ao Site (Desktop) */}
+        <button 
+            onClick={onExit}
+            className="hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-azul-900 transition font-semibold text-sm"
+        >
+            <i className="fas fa-arrow-left"></i> Voltar ao Site
+        </button>
       </div>
 
       {activeTab === 'DASHBOARD' && (
@@ -300,11 +304,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* Table of Articles */}
               <div>
                   <h3 className="text-xl font-bold text-gray-800 mb-4">Desempenho dos Artigos</h3>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
                       <table className="w-full text-left border-collapse">
                           <thead>
                               <tr className="bg-gray-50 text-gray-600 text-sm border-b">
-                                  <th className="p-4 font-semibold">Título</th>
+                                  <th className="p-4 font-semibold w-1/2">Título</th>
                                   <th className="p-4 font-semibold">Categoria</th>
                                   <th className="p-4 font-semibold">Autor</th>
                                   <th className="p-4 font-semibold text-right">Views</th>
@@ -335,6 +339,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                               <img src={banner.image} alt="" className="w-16 h-10 object-cover rounded" />
                               <div className="flex-1">
                                   <h4 className="font-bold text-gray-700 text-sm">{banner.title}</h4>
+                                  <p className="text-xs text-gray-400 truncate">{banner.link || 'Sem link'}</p>
                                   <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                                       <div 
                                         className="bg-azul-500 h-2 rounded-full" 
@@ -447,36 +452,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             </div>
             
-            {!generated && (
-                <div className="bg-azul-50 p-6 rounded-xl border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="text-azul-900">
-                        <h4 className="font-bold"><i className="fas fa-magic mr-2"></i>Assistente de Escrita AI</h4>
-                        <p className="text-sm opacity-80">Deixe o Gemini criar um rascunho completo baseado no título acima.</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={handleGenerate}
-                        disabled={isLoading || !formData.title}
-                        className={`px-6 py-3 rounded-lg font-bold text-white shadow-lg flex items-center gap-2 transition-all transform hover:-translate-y-1 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-azul-700 to-azul-500 hover:shadow-azul-500/30'}`}
-                    >
-                        {isLoading ? (
-                            <><i className="fas fa-circle-notch fa-spin"></i> Gerando (Gemini Thinking)...</>
-                        ) : (
-                            <><i className="fas fa-pen-nib"></i> Gerar Rascunho</>
-                        )}
-                    </button>
-                </div>
-            )}
+            {/* Bloco de Assistente de Escrita AI Removido Conforme Solicitado */}
 
             <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Conteúdo do Artigo (Markdown)</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Conteúdo do Artigo</label>
             <div className="relative">
                 <textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={12}
                     className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 font-mono text-sm leading-relaxed"
-                    placeholder="# Escreva seu artigo ou gere com IA..."
+                    placeholder="Escreva seu artigo..."
                 />
             </div>
             </div>
@@ -505,6 +491,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <h3 className="text-xl font-bold">{banner.title}</h3>
                                     <p className="text-sm opacity-90">{banner.subtitle}</p>
                                     <span className="inline-block mt-2 text-xs bg-white/20 px-2 py-1 rounded">{banner.cta}</span>
+                                    {banner.link && <p className="text-xs text-blue-200 mt-1 truncate max-w-md"><i className="fas fa-link mr-1"></i> {banner.link}</p>}
                                 </div>
                             </div>
                             <div className="absolute top-4 right-4 flex gap-2">
@@ -554,13 +541,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             onChange={(e) => setNewBanner({...newBanner, subtitle: e.target.value})}
                         />
                     </div>
-                    <input 
-                        type="text" 
-                        placeholder="Texto do Botão (Ex: Saiba Mais)"
-                        className="p-3 border rounded-lg w-full"
-                        value={newBanner.cta}
-                        onChange={(e) => setNewBanner({...newBanner, cta: e.target.value})}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <input 
+                            type="text" 
+                            placeholder="Texto do Botão (Ex: Saiba Mais)"
+                            className="p-3 border rounded-lg w-full"
+                            value={newBanner.cta}
+                            onChange={(e) => setNewBanner({...newBanner, cta: e.target.value})}
+                        />
+                         <input 
+                            type="url" 
+                            placeholder="Link de Destino (https://...)"
+                            className="p-3 border rounded-lg w-full"
+                            value={newBanner.link}
+                            onChange={(e) => setNewBanner({...newBanner, link: e.target.value})}
+                        />
+                    </div>
                     <button 
                     onClick={handleAddBannerSubmit}
                     className="w-full bg-azul-900 text-white font-bold py-3 rounded-lg hover:bg-azul-700 transition"
@@ -615,8 +611,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
               {/* Users List */}
               <div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">Equipe Cadastrada</h3>
-                  <div className="overflow-x-auto">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Equipe Cadastrada (Banco de Dados)</h3>
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
                       <table className="w-full text-left border-collapse">
                           <thead>
                               <tr className="bg-gray-50 text-gray-600 text-sm border-b">
@@ -633,7 +629,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                       <td className="p-4 text-right">
                                           <button 
                                             onClick={() => handleDeleteUser(user.id)}
-                                            className="text-red-500 hover:text-red-700 font-bold text-xs uppercase"
+                                            className="text-red-500 hover:text-red-700 font-bold text-xs uppercase border border-red-200 px-2 py-1 rounded hover:bg-red-50 transition"
                                           >
                                             <i className="fas fa-trash mr-1"></i> Remover
                                           </button>
@@ -642,7 +638,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                               )) : (
                                   <tr>
                                       <td colSpan={3} className="p-8 text-center text-gray-400">
-                                          Nenhum usuário extra encontrado.
+                                          Nenhum usuário extra encontrado no banco de dados.
                                       </td>
                                   </tr>
                               )}

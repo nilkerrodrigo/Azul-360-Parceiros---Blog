@@ -1,6 +1,11 @@
 import React from 'react';
+import { ViewState } from '../types';
 
-const About: React.FC = () => {
+interface AboutProps {
+  onNavigate: (view: ViewState) => void;
+}
+
+const About: React.FC<AboutProps> = ({ onNavigate }) => {
   return (
     <section className="bg-white min-h-[80vh] py-16">
       <div className="container mx-auto px-4">
@@ -52,7 +57,10 @@ const About: React.FC = () => {
             </div>
 
             <div className="pt-6">
-                <button className="bg-azul-900 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-azul-700 transition transform hover:-translate-y-1">
+                <button 
+                  onClick={() => onNavigate('HOME')}
+                  className="bg-azul-900 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-azul-700 transition transform hover:-translate-y-1"
+                >
                     Explore Nossos Artigos
                 </button>
             </div>

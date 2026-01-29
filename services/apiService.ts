@@ -102,6 +102,7 @@ export const getBanners = async (): Promise<Banner[]> => {
             title: d.title,
             subtitle: d.subtitle,
             cta: d.cta,
+            link: d.link, // Mapped from PHP response
             clicks: Number(d.clicks || 0)
         }));
     } catch (error) {
@@ -116,7 +117,8 @@ export const addBanner = async (banner: Omit<Banner, 'id'>) => {
             title: banner.title,
             subtitle: banner.subtitle,
             image_url: banner.image,
-            cta: banner.cta
+            cta: banner.cta,
+            link: banner.link // Included in payload
         };
         return await apiRequest('banners.php', {
             method: 'POST',

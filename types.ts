@@ -24,6 +24,7 @@ export interface Banner {
   title: string;
   subtitle: string;
   cta: string;
+  link?: string; // New property for URL
   clicks?: number; // New metric
 }
 
