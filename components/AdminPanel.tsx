@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateBlogPost, generateExcerpt } from '../services/geminiService';
-import { uploadImage } from '../services/apiService';
-import { Article, Category, Banner } from '../types';
+import { uploadImage, getUsers, addUser, deleteUser } from '../services/apiService';
+import { Article, Category, Banner, User } from '../types';
 
 interface AdminPanelProps {
   onPublish: (article: Article) => Promise<void>;
@@ -25,13 +25,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     onDeleteBanner,
     articles
 }) => {
-  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ARTICLE' | 'BANNERS'>('DASHBOARD');
+  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ARTICLE' | 'BANNERS' | 'USERS'>('DASHBOARD');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showCatInput, setShowCatInput] = useState(false);
   
+  // Users Management State
+  const [users, setUsers] = useState<User[]>([]);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '' });
+
+  useEffect(() => {
+      if (activeTab === 'USERS') {
+          fetchUsers();
+      }
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+      const fetchedUsers = await getUsers();
+      setUsers(fetchedUsers);
+  };
+
   // Article Form State
   const [formData, setFormData] = useState({
     title: '',
@@ -172,6 +187,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       }
   };
 
+  const handleAddUser = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newUser.name || !newUser.email || !newUser.password) {
+          alert("Preencha todos os campos.");
+          return;
+      }
+      setIsUploading(true);
+      try {
+          await addUser(newUser.name, newUser.email, newUser.password);
+          setNewUser({ name: '', email: '', password: '' });
+          await fetchUsers();
+          alert("Usuário adicionado com sucesso!");
+      } catch (e) {
+          alert("Erro ao adicionar usuário.");
+      } finally {
+          setIsUploading(false);
+      }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+      if(window.confirm("Tem certeza que deseja remover este usuário?")) {
+          await deleteUser(id);
+          await fetchUsers();
+      }
+  };
+
   const totalViews = articles.reduce((acc, curr) => acc + (curr.views || 0), 0);
   const totalBannerClicks = banners.reduce((acc, curr) => acc + (curr.clicks || 0), 0);
   const mostReadArticle = [...articles].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
@@ -183,33 +224,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center rounded-lg">
               <div className="text-center">
                   <i className="fas fa-cloud-upload-alt fa-bounce text-4xl text-azul-500 mb-2"></i>
-                  <p className="font-bold text-azul-900">Enviando dados para o servidor...</p>
+                  <p className="font-bold text-azul-900">Processando solicitação...</p>
               </div>
           </div>
       )}
 
-      {/* ... (Rest of UI remains similar, updating only data binding) ... */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 border-b pb-4 gap-4">
         <div>
             <h2 className="text-3xl font-bold text-azul-900">Painel Administrativo</h2>
-            <div className="flex gap-4 mt-4">
+            <div className="flex gap-4 mt-4 overflow-x-auto">
                 <button 
                     onClick={() => setActiveTab('DASHBOARD')}
-                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition ${activeTab === 'DASHBOARD' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition whitespace-nowrap ${activeTab === 'DASHBOARD' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Dashboard
                 </button>
                 <button 
                     onClick={() => setActiveTab('ARTICLE')}
-                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition ${activeTab === 'ARTICLE' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition whitespace-nowrap ${activeTab === 'ARTICLE' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Novo Artigo
                 </button>
                 <button 
                     onClick={() => setActiveTab('BANNERS')}
-                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition ${activeTab === 'BANNERS' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition whitespace-nowrap ${activeTab === 'BANNERS' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Banners
+                </button>
+                <button 
+                    onClick={() => setActiveTab('USERS')}
+                    className={`pb-2 px-1 text-sm font-bold uppercase tracking-wider transition whitespace-nowrap ${activeTab === 'USERS' ? 'text-azul-500 border-b-2 border-azul-500' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    Usuários
                 </button>
             </div>
         </div>
@@ -523,6 +570,87 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             </div>
          </div>
+      )}
+
+      {activeTab === 'USERS' && (
+          <div className="animate-fade-in space-y-8">
+              {/* Add User Form */}
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <i className="fas fa-user-plus text-azul-500"></i> Adicionar Novo Administrador
+                  </h3>
+                  <form onSubmit={handleAddUser} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <input
+                        type="text"
+                        placeholder="Nome"
+                        className="p-3 border rounded-lg w-full"
+                        value={newUser.name}
+                        onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                        required
+                      />
+                      <input
+                        type="email"
+                        placeholder="E-mail"
+                        className="p-3 border rounded-lg w-full"
+                        value={newUser.email}
+                        onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                        required
+                      />
+                      <input
+                        type="password"
+                        placeholder="Senha"
+                        className="p-3 border rounded-lg w-full"
+                        value={newUser.password}
+                        onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                        required
+                      />
+                      <button 
+                        type="submit"
+                        className="md:col-span-3 bg-azul-900 text-white font-bold py-3 rounded-lg hover:bg-azul-700 transition"
+                      >
+                        Cadastrar Usuário
+                      </button>
+                  </form>
+              </div>
+
+              {/* Users List */}
+              <div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Equipe Cadastrada</h3>
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                          <thead>
+                              <tr className="bg-gray-50 text-gray-600 text-sm border-b">
+                                  <th className="p-4 font-semibold">Nome</th>
+                                  <th className="p-4 font-semibold">E-mail</th>
+                                  <th className="p-4 font-semibold text-right">Ações</th>
+                              </tr>
+                          </thead>
+                          <tbody className="text-sm">
+                              {users.length > 0 ? users.map((user) => (
+                                  <tr key={user.id} className="border-b hover:bg-gray-50 transition">
+                                      <td className="p-4 font-medium text-gray-800">{user.name}</td>
+                                      <td className="p-4 text-gray-500">{user.email}</td>
+                                      <td className="p-4 text-right">
+                                          <button 
+                                            onClick={() => handleDeleteUser(user.id)}
+                                            className="text-red-500 hover:text-red-700 font-bold text-xs uppercase"
+                                          >
+                                            <i className="fas fa-trash mr-1"></i> Remover
+                                          </button>
+                                      </td>
+                                  </tr>
+                              )) : (
+                                  <tr>
+                                      <td colSpan={3} className="p-8 text-center text-gray-400">
+                                          Nenhum usuário extra encontrado.
+                                      </td>
+                                  </tr>
+                              )}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );

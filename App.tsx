@@ -4,8 +4,8 @@ import ArticleCard from './components/ArticleCard';
 import AdminPanel from './components/AdminPanel';
 import Login from './components/Login';
 import BannerSlider from './components/BannerSlider';
+import About from './components/About';
 import { Article, ViewState, Category, Banner } from './types';
-import { INITIAL_CATEGORIES } from './constants';
 import { 
     getArticles, 
     getCategories, 
@@ -42,29 +42,20 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-        // We use Promise.allSettled or just individual try-catches inside the services
-        // The service functions now return [] on error, so Promise.all won't throw
+        // O serviço de API agora lida com erros e retorna dados mockados se necessário
         const [fetchedArticles, fetchedCategories, fetchedBanners] = await Promise.all([
             getArticles(),
             getCategories(),
             getBanners()
         ]);
         
-        // If everything is empty, it might be a connection error that was swallowed, 
-        // or just an empty database.
         setArticles(fetchedArticles);
-        
-        // Use INITIAL_CATEGORIES if API returns empty (for demo purposes or initial setup)
-        if (fetchedCategories.length > 0) {
-            setCategories(fetchedCategories);
-        } else {
-            setCategories(INITIAL_CATEGORIES);
-        }
-        
+        setCategories(fetchedCategories);
         setBanners(fetchedBanners);
     } catch (error: any) {
         console.error("Critical error fetching data:", error);
-        setError("Não foi possível conectar ao servidor. Verifique sua conexão ou tente recarregar a página.");
+        // Só mostramos erro se realmente não houver dados nenhum (nem mock)
+        setError("Não foi possível carregar a aplicação. Tente recarregar a página.");
     } finally {
         setLoading(false);
     }
@@ -145,7 +136,7 @@ function App() {
           <div className="min-h-screen flex items-center justify-center bg-gray-50">
               <div className="text-center">
                   <i className="fas fa-circle-notch fa-spin text-4xl text-azul-500 mb-4"></i>
-                  <p className="text-gray-600">Conectando ao banco de dados...</p>
+                  <p className="text-gray-600">Carregando conteúdo...</p>
               </div>
           </div>
       );
@@ -391,6 +382,7 @@ function App() {
       <div className="flex-grow">
         {view === 'HOME' && renderHome()}
         {view === 'LOGIN' && <Login onLogin={handleLoginSuccess} onCancel={() => setView('HOME')} />}
+        {view === 'ABOUT' && <About />}
         {view === 'ADMIN' && (
             <AdminPanel 
                 onPublish={handlePublish} 
@@ -440,8 +432,8 @@ function App() {
                 <h4 className="font-bold mb-4 uppercase text-sm tracking-wider text-azul-500">Mapa do Site</h4>
                 <ul className="space-y-2 text-sm text-gray-300">
                     <li><a href="#" onClick={() => setView('HOME')} className="hover:text-white transition cursor-pointer">Início</a></li>
-                    <li><a href="#" className="hover:text-white transition">Sobre</a></li>
-                    <li><a href="#" className="hover:text-white transition">Blog</a></li>
+                    <li><a href="#" onClick={() => setView('ABOUT')} className="hover:text-white transition cursor-pointer">Sobre</a></li>
+                    <li><a href="#" onClick={() => setView('HOME')} className="hover:text-white transition cursor-pointer">Blog</a></li>
                 </ul>
             </div>
             

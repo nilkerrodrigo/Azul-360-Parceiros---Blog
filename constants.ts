@@ -1,4 +1,4 @@
-import { Article, Category, Banner } from './types';
+import { Article, Category, Banner, User } from './types';
 
 export const INITIAL_CATEGORIES: Category[] = [
   { id: 'cred-news', name: 'Cred News', icon: 'fa-newspaper', description: 'Notícias e novidades do setor' },
@@ -80,4 +80,9 @@ export const INITIAL_ARTICLES: Article[] = [
     date: '18 Out, 2023',
     views: 1540
   },
+];
+
+export const INITIAL_USERS: User[] = [
+    { id: '1', name: 'Admin Padrão', email: 'admin@azul360.com.br' },
+    { id: '2', name: 'Editor Chefe', email: 'editor@azul360.com.br' }
 ];

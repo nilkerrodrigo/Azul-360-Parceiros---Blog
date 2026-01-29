@@ -47,7 +47,12 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
             >
               Blog
             </button>
-            <button className="hover:text-azul-500 transition-colors text-gray-200">Sobre</button>
+            <button 
+              onClick={() => onNavigate('ABOUT')}
+              className={`hover:text-azul-500 transition-colors ${currentView === 'ABOUT' ? 'text-azul-500' : 'text-gray-200'}`}
+            >
+              Sobre
+            </button>
             <button 
               onClick={() => onNavigate('ADMIN')}
               className={`hover:text-azul-500 transition-colors ${currentView === 'ADMIN' || currentView === 'LOGIN' ? 'text-azul-500' : 'text-gray-200'}`}

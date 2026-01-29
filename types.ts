@@ -27,7 +27,13 @@ export interface Banner {
   clicks?: number; // New metric
 }
 
-export type ViewState = 'HOME' | 'ADMIN' | 'ARTICLE_DETAIL' | 'LOGIN' | 'SEARCH_RESULTS';
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export type ViewState = 'HOME' | 'ADMIN' | 'ARTICLE_DETAIL' | 'LOGIN' | 'SEARCH_RESULTS' | 'ABOUT';
 
 export interface AdminDraft {
   title: string;

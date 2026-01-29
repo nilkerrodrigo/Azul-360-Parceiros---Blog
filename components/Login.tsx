@@ -32,71 +32,70 @@ const Login: React.FC<LoginProps> = ({ onLogin, onCancel }) => {
       <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
             <img 
-                src="http://azul360parceiros.com.br/wp-content/uploads/2026/01/parceiros-scaled.png" 
-                alt="Azul 360 Parceiros" 
-                className="h-16 w-auto mx-auto mb-6 object-contain"
+                src="http://azul360parceiros.com.br/wp-content/uploads/2025/12/logo-2-scaled.png" 
+                alt="Azul 360 Admin" 
+                className="h-16 mx-auto mb-4 object-contain"
             />
-            <h2 className="text-xl font-semibold text-gray-700">Acesso Restrito</h2>
-            <p className="text-sm text-gray-500">
-                Faça login para gerenciar o blog.
-            </p>
+            <h2 className="text-2xl font-bold text-azul-900">Acesso Restrito</h2>
+            <p className="text-gray-500 text-sm">Entre com suas credenciais de administrador</p>
         </div>
-
+        
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 flex items-center">
-            <i className="fas fa-exclamation-circle mr-2"></i> {error}
-          </div>
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 flex items-center">
+                <i className="fas fa-exclamation-circle mr-2"></i>
+                {error}
+            </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">E-mail</label>
-            <div className="relative">
-                <i className="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-transparent outline-none transition"
-                    placeholder="admin@azul360.com.br"
-                    required
-                />
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">E-mail</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i className="fas fa-envelope text-gray-400"></i>
+                    </div>
+                    <input 
+                        type="email" 
+                        className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-azul-500 transition"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-            <div className="relative">
-                <i className="fas fa-lock absolute left-3 top-3.5 text-gray-400"></i>
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-transparent outline-none transition"
-                    placeholder="Sua senha"
-                    required
-                />
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full text-white font-bold py-3 rounded-lg transition duration-300 shadow-md ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-azul-900 hover:bg-azul-700'}`}
-          >
-            {loading ? 'Validando...' : 'Entrar no Painel'}
-          </button>
-          
-          <div className="flex justify-between items-center text-sm">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="text-gray-500 hover:text-azul-900 transition"
-              >
-                Voltar para o site
-              </button>
-          </div>
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Senha</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i className="fas fa-lock text-gray-400"></i>
+                    </div>
+                    <input 
+                        type="password" 
+                        className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-azul-500 transition"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
+            </div>
+
+            <button 
+                type="submit" 
+                disabled={loading}
+                className={`w-full bg-azul-900 text-white font-bold py-3 rounded-lg hover:bg-azul-700 transition transform hover:-translate-y-0.5 shadow-lg ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            >
+                {loading ? <i className="fas fa-circle-notch fa-spin"></i> : 'Entrar no Painel'}
+            </button>
         </form>
+
+        <div className="mt-6 text-center">
+            <button onClick={onCancel} className="text-sm text-gray-500 hover:text-azul-700 underline">
+                Voltar para o site
+            </button>
+        </div>
       </div>
     </div>
   );
