@@ -1,21 +1,27 @@
 <?php
 require_once 'config.php';
-$pdo = getDbConnection();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = json_decode(file_get_contents("php://input"), true);
-    $type = $data['type'];
-    $id = $data['id'];
+try {
+    $pdo = getDbConnection();
 
-    if ($type === 'view') {
-        $stmt = $pdo->prepare("UPDATE articles SET views = views + 1 WHERE id = ?");
-        $stmt->execute([$id]);
-    } 
-    elseif ($type === 'click') {
-        $stmt = $pdo->prepare("UPDATE banners SET clicks = clicks + 1 WHERE id = ?");
-        $stmt->execute([$id]);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $data = json_decode(file_get_contents("php://input"), true);
+        $type = $data['type'] ?? '';
+        $id = $data['id'] ?? 0;
+
+        if ($type === 'view') {
+            $stmt = $pdo->prepare("UPDATE articles SET views = views + 1 WHERE id = ?");
+            $stmt->execute([$id]);
+        } 
+        elseif ($type === 'click') {
+            $stmt = $pdo->prepare("UPDATE banners SET clicks = clicks + 1 WHERE id = ?");
+            $stmt->execute([$id]);
+        }
+        
+        echo json_encode(["success" => true]);
     }
-    
-    echo json_encode(["success" => true]);
+} catch (Exception $e) {
+    // Falhas de métrica não devem quebrar o frontend, retorna ok mesmo com erro
+    echo json_encode(["success" => false, "error" => "Metric error ignored"]);
 }
 ?>

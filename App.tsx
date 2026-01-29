@@ -452,7 +452,7 @@ function App() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-1">
                 <img 
-                    src="http://azul360parceiros.com.br/wp-content/uploads/2026/01/parceiros-scaled.png" 
+                    src="https://azul360parceiros.com.br/wp-content/uploads/2026/01/parceiros-scaled.png" 
                     alt="Azul 360 Parceiros" 
                     className="h-12 w-auto mb-4 object-contain brightness-0 invert"
                 />

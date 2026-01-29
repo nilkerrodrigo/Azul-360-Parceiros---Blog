@@ -1,0 +1,16 @@
+<IfModule mod_headers.c>
+    # Força headers CORS caso o PHP falhe antes de enviá-los
+    # Nota: O PHP deve gerenciar isso, mas isso garante que erros 500 ou 404 também tenham CORS
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Garante que .php seja executado
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . index.php [L]
+</IfModule>

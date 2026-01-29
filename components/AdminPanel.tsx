@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateExcerpt } from '../services/geminiService';
+import { generateExcerpt, generateBlogPost } from '../services/geminiService';
 import { uploadImage, getUsers, addUser, deleteUser } from '../services/apiService';
 import { Article, Category, Banner, User } from '../types';
 
@@ -14,7 +14,7 @@ interface AdminPanelProps {
   onDeleteBanner: (id: string) => void;
   articles: Article[];
   onExit: () => void; 
-  onDeleteArticle: (id: string) => void; // Nova prop
+  onDeleteArticle: (id: string) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -32,6 +32,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'ARTICLE' | 'BANNERS' | 'USERS'>('DASHBOARD');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false); // State para loading da IA
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showCatInput, setShowCatInput] = useState(false);
   
@@ -93,6 +94,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           } else {
               setNewBanner({ ...newBanner, image: objectUrl, imageFile: file });
           }
+      }
+  };
+
+  const handleGenerateContent = async () => {
+      if (!formData.title) {
+          alert("Por favor, digite um título ou tópico primeiro para a IA saber sobre o que escrever.");
+          return;
+      }
+      
+      setIsGeneratingAI(true);
+      try {
+          const generatedText = await generateBlogPost(formData.title, formData.category);
+          setFormData(prev => ({ ...prev, content: generatedText }));
+      } catch (error) {
+          alert("Erro ao gerar conteúdo com IA.");
+      } finally {
+          setIsGeneratingAI(false);
       }
   };
 
@@ -221,11 +239,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     // Max-w-7xl para layout mais largo
     <div className="bg-white rounded-lg shadow-xl p-8 max-w-7xl mx-auto my-10 border border-gray-100 relative">
       
-      {isUploading && (
-          <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center rounded-lg">
+      {(isUploading || isGeneratingAI) && (
+          <div className="absolute inset-0 bg-white/90 z-50 flex items-center justify-center rounded-lg backdrop-blur-sm">
               <div className="text-center">
-                  <i className="fas fa-cloud-upload-alt fa-bounce text-4xl text-azul-500 mb-2"></i>
-                  <p className="font-bold text-azul-900">Processando solicitação...</p>
+                  {isGeneratingAI ? (
+                       <i className="fas fa-magic fa-spin text-5xl text-purple-600 mb-4"></i>
+                  ) : (
+                       <i className="fas fa-cloud-upload-alt fa-bounce text-5xl text-azul-500 mb-4"></i>
+                  )}
+                  <p className="font-bold text-xl text-gray-800">
+                      {isGeneratingAI ? 'Gemini 3 Pro está escrevendo...' : 'Processando solicitação...'}
+                  </p>
+                  {isGeneratingAI && <p className="text-sm text-gray-500 mt-2">Criando conteúdo otimizado para {formData.category}</p>}
               </div>
           </div>
       )}
@@ -413,13 +438,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Título / Tópico</label>
-                <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-transparent transition"
-                placeholder="Ex: Tendências de Ecoturismo para 2025"
-                />
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 focus:border-transparent transition"
+                        placeholder="Ex: Tendências de Ecoturismo para 2025"
+                    />
+                </div>
             </div>
 
             <div>
@@ -503,14 +530,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
             
             <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Conteúdo do Artigo</label>
+            <div className="flex justify-between items-end mb-2">
+                <label className="block text-sm font-semibold text-gray-700">Conteúdo do Artigo</label>
+                <button 
+                    type="button" 
+                    onClick={handleGenerateContent}
+                    className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1 rounded-full font-bold transition flex items-center gap-2"
+                >
+                    <i className="fas fa-magic"></i> Escrever com IA (Gemini 3 Pro)
+                </button>
+            </div>
             <div className="relative">
                 <textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={12}
                     className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-azul-500 font-mono text-sm leading-relaxed"
-                    placeholder="Escreva seu artigo..."
+                    placeholder="Escreva seu artigo manualmente ou use o botão de IA acima..."
                 />
             </div>
             </div>

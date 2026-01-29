@@ -1,8 +1,11 @@
 <?php
 require_once 'config.php';
 
+$response = [];
+
 try {
     $pdo = getDbConnection();
+    $response["connection"] = "OK";
     
     // Tabela Users
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
@@ -12,14 +15,16 @@ try {
         password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $response["table_users"] = "OK";
 
-    // Cria admin padrão se não existir
+    // Admin Padrão
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
     $stmt->execute(['admin@azul360.com.br']);
     if ($stmt->fetchColumn() == 0) {
-        // Senha: admin123
         $pdo->exec("INSERT INTO users (name, email, password) VALUES ('Admin', 'admin@azul360.com.br', 'admin123')");
-        echo "Usuário admin criado.<br>";
+        $response["admin_user"] = "Created";
+    } else {
+        $response["admin_user"] = "Exists";
     }
 
     // Tabela Categories
@@ -30,13 +35,8 @@ try {
         description VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $response["table_categories"] = "OK";
     
-    // Categorias iniciais
-    $cats = ['Cred News', 'Tecnologia', 'Gestão', 'Mercados'];
-    foreach($cats as $cat) {
-        $pdo->exec("INSERT IGNORE INTO categories (name, description) VALUES ('$cat', 'Categoria padrão')");
-    }
-
     // Tabela Articles
     $pdo->exec("CREATE TABLE IF NOT EXISTS articles (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,6 +50,7 @@ try {
         views INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $response["table_articles"] = "OK";
 
     // Tabela Banners
     $pdo->exec("CREATE TABLE IF NOT EXISTS banners (
@@ -62,10 +63,12 @@ try {
         clicks INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $response["table_banners"] = "OK";
 
-    echo json_encode(["success" => true, "message" => "Banco de dados configurado com sucesso! Tabelas criadas."]);
+    echo json_encode(["success" => true, "details" => $response]);
 
 } catch (Exception $e) {
+    http_response_code(500);
     echo json_encode(["success" => false, "error" => $e->getMessage()]);
 }
 ?>

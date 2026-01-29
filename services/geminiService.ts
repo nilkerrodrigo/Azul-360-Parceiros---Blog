@@ -24,33 +24,38 @@ export const generateBlogPost = async (topic: string, category: string): Promise
   try {
     const ai = getAI();
     
+    // Prompt altamente específico para o público alvo (Agências de Viagens Parceiras da Azul)
     const prompt = `
-      Write a professional, engaging blog post for "Azul 360 Parceiros" (a corporate partner blog).
-      Topic: ${topic}
-      Category: ${category}
+      Escreva um artigo de blog profissional e envolvente para o portal "Azul 360 Parceiros".
       
-      Structure:
-      1. An engaging introduction.
-      2. 2-3 detailed paragraphs with subtitles.
-      3. A conclusion.
+      Público Alvo: Agentes de viagens e parceiros comerciais da Azul Viagens.
+      Objetivo: Educar, informar e incentivar vendas de produtos turísticos ou melhoria de gestão.
       
-      Tone: Professional, innovative, and encouraging.
-      Language: Portuguese (Brazil).
-      Format: Markdown.
+      Tópico: ${topic}
+      Categoria: ${category}
+      
+      Estrutura Obrigatória:
+      1. Uma introdução cativante que conecte com a realidade do agente de viagens.
+      2. 3 parágrafos de desenvolvimento com subtítulos claros (use ## para subtítulos Markdown).
+      3. Uma conclusão prática ou chamada para ação (ex: "Consulte o portal de emissões...").
+      
+      Tom de Voz: Profissional, parceiro, encorajador e especialista.
+      Idioma: Português do Brasil.
+      Formato: Markdown.
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Using the specific requested model for complex text tasks
+      model: 'gemini-3-pro-preview', // Modelo de alta capacidade para textos complexos
       contents: prompt,
       config: {
-        thinkingConfig: { thinkingBudget: 1024 }, // Enable thinking for better structure
+        thinkingConfig: { thinkingBudget: 1024 }, // Permite "pensar" para estruturar melhor o argumento de venda
       }
     });
 
     return response.text || "Não foi possível gerar o conteúdo.";
   } catch (error) {
     console.error("Error generating blog post:", error);
-    return "Erro ao conectar com o Gemini AI. Verifique se a chave de API está configurada corretamente.";
+    return "Erro ao conectar com o Gemini AI. Verifique se a chave de API está configurada no arquivo .env.";
   }
 };
 
@@ -61,8 +66,8 @@ export const generateExcerpt = async (content: string): Promise<string> => {
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview', // Flash is sufficient for summarization
-            contents: `Resuma o seguinte texto em um parágrafo curto e chamativo (máximo 120 caracteres) para um card de blog, em Português: ${content.substring(0, 1000)}...`
+            model: 'gemini-3-flash-preview', // Flash é mais rápido e suficiente para resumos
+            contents: `Resuma o seguinte texto em um parágrafo curto e vendedor (máximo 140 caracteres) para atrair cliques, em Português: ${content.substring(0, 1500)}...`
         });
         return response.text || "";
     } catch (e) {

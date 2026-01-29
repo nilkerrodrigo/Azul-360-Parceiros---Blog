@@ -3,42 +3,51 @@ import { API_BASE_URL } from '../config';
 
 // Helper para chamadas de API
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-    // Garante URL correta sem barras duplas
-    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-    // Adiciona timestamp para evitar cache agressivo em GETs
-    const cacheBuster = options.method === 'POST' ? '' : `?t=${new Date().getTime()}`;
-    const url = `${baseUrl}/${endpoint}${cacheBuster}`;
+    // Remove barra final da base e inicial do endpoint para garantir url limpa
+    const baseUrl = API_BASE_URL.replace(/\/$/, '');
+    const cleanEndpoint = endpoint.replace(/^\//, '');
+    
+    // Cache buster
+    const separator = cleanEndpoint.includes('?') ? '&' : '?';
+    const cacheBuster = options.method === 'POST' ? '' : `${separator}t=${new Date().getTime()}`;
+    
+    const url = `${baseUrl}/${cleanEndpoint}${cacheBuster}`;
     
     try {
         const response = await fetch(url, {
             ...options,
-            mode: 'cors'
+            mode: 'cors', // Habilita CORS explicitamente
+            credentials: 'omit', // Não envia cookies/auth, facilitando CORS com '*'
+            headers: {
+                'Accept': 'application/json',
+                ...options.headers
+            }
         });
 
         const text = await response.text();
         
-        // Erro HTTP (404, 500, etc)
         if (!response.ok) {
-            console.error(`[API Error] ${response.status} em ${endpoint}:`, text);
-            throw new Error(`Erro do Servidor (${response.status}): Verifique se o arquivo ${endpoint} existe na pasta /api/`);
+            console.error(`[API Error ${response.status}] URL: ${url} | Body:`, text.substring(0, 200));
+            throw new Error(`Erro Servidor (${response.status})`);
         }
 
         try {
+            // Tenta parsear JSON
+            // Se o servidor retornou algo vazio mas ok (200), retorna null ou objeto vazio
+            if (!text.trim()) return {};
+            
             const json = JSON.parse(text);
             return json;
         } catch (e) {
-            console.error(`[API Parse Error] Resposta não é JSON em ${endpoint}:`, text);
-            // Se o texto conter "Connection failed", o PHP imprimiu erro fora do JSON
-            if (text.includes("Connection failed") || text.includes("SQLSTATE")) {
-                 throw new Error("Erro de conexão com o Banco de Dados. Verifique config.php.");
-            }
-            throw new Error("Resposta inválida do servidor. Verifique os logs.");
+            console.error(`[JSON Parse Error] URL: ${url}`);
+            console.error("Conteúdo recebido (HTML ou Texto):", text);
+            throw new Error("Resposta inválida do servidor. A API retornou HTML em vez de JSON.");
         }
     } catch (error: any) {
-        // Erro de rede (Failed to fetch)
-        if (error.message === 'Failed to fetch') {
-            console.error(`[Network Error] Não foi possível conectar a ${url}`);
-            throw new Error(`Falha de conexão: O sistema não encontrou a API em ${url}. Verifique se a pasta 'api' foi enviada para o servidor.`);
+        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+            console.error(`[Network Error] Falha crítica ao conectar em: ${url}`);
+            console.error("Dica: Verifique se o link https://azul360parceiros.com.br/api/index.php abre no navegador.");
+            throw new Error("Falha de conexão. O servidor recusou a conexão (Erro de CORS ou Servidor Offline).");
         }
         throw error;
     }
@@ -97,7 +106,7 @@ export const incrementArticleView = async (id: string) => {
             body: JSON.stringify({ type: 'view', id })
         });
     } catch (e) {
-        // Ignora erros de métrica para não atrapalhar navegação
+        // Ignora erros de métrica
     }
 };
 
@@ -231,7 +240,7 @@ export const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const baseUrl = API_BASE_URL.replace(/\/$/, '');
     
     const response = await fetch(`${baseUrl}/upload.php`, {
         method: 'POST',

@@ -1,20 +1,22 @@
 // Configuration for the application
 
-// Domínio onde a API PHP está hospedada
-// Ajustado para o domínio principal para garantir conexão
-const API_DOMAIN = 'https://azul360parceiros.com.br'; 
+// Verifica se estamos rodando no navegador
+const isBrowser = typeof window !== 'undefined';
 
-// Verifica se o site está rodando no domínio oficial
-const isProduction = typeof window !== 'undefined' && (
-  window.location.hostname === 'azul360parceiros.com.br' || 
-  window.location.hostname === 'www.azul360parceiros.com.br'
+// Determina se é produção verificando se o hostname inclui o domínio oficial
+// Agora verificamos especificamente o subdomínio 'blog' ou o principal
+const isProduction = isBrowser && (
+  window.location.hostname.includes('azul360parceiros.com.br')
 );
 
-// URL Base da API
+// Se for produção, use caminho relativo '/api'. 
+// Se for localhost, use o domínio CORRETO: blog.azul360parceiros.com.br
 export const API_BASE_URL = isProduction
   ? '/api' 
-  : `${API_DOMAIN}/api`;
+  : 'https://blog.azul360parceiros.com.br/api';
 
 export const UPLOADS_URL = isProduction
   ? '/api/uploads'
-  : `${API_DOMAIN}/api/uploads`;
+  : 'https://blog.azul360parceiros.com.br/api/uploads';
+
+console.log(`Configuração API: ${isProduction ? 'Produção (Relativo)' : 'Dev (Absoluto)'} -> ${API_BASE_URL}`);

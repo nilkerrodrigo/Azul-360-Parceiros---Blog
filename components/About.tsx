@@ -15,7 +15,7 @@ const About: React.FC<AboutProps> = ({ onNavigate }) => {
           <div className="w-full lg:w-1/2">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white transform hover:rotate-1 transition duration-500">
                <img 
-                 src="http://azul360parceiros.com.br/wp-content/uploads/2026/01/azul-instagram-post-jh8a80zf9.png" 
+                 src="https://azul360parceiros.com.br/wp-content/uploads/2026/01/azul-instagram-post-jh8a80zf9.png" 
                  alt="Sobre Azul 360 Parceiros" 
                  className="w-full h-auto object-cover"
                  onError={(e) => { e.currentTarget.src = 'https://picsum.photos/800/800?grayscale'; }}

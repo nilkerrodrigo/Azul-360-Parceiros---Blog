@@ -32,7 +32,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onCancel }) => {
       <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
             <img 
-                src="http://azul360parceiros.com.br/wp-content/uploads/2025/12/logo-2-scaled.png" 
+                src="https://azul360parceiros.com.br/wp-content/uploads/2025/12/logo-2-scaled.png" 
                 alt="Azul 360 Admin" 
                 className="h-16 mx-auto mb-4 object-contain"
             />
