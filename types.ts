@@ -8,7 +8,16 @@ export interface Article {
   author: string;
   date: string;
   featured?: boolean;
-  views?: number; // New metric
+  views?: number;
+  likes?: number; // New metric
+}
+
+export interface Comment {
+  id: string;
+  articleId: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface Category {
@@ -19,13 +28,13 @@ export interface Category {
 }
 
 export interface Banner {
-  id: string; // Changed from number to string for Firestore IDs
+  id: string;
   image: string;
   title: string;
   subtitle: string;
   cta: string;
-  link?: string; // New property for URL
-  clicks?: number; // New metric
+  link?: string;
+  clicks?: number;
 }
 
 export interface User {
@@ -38,6 +47,7 @@ export type ViewState = 'HOME' | 'ADMIN' | 'ARTICLE_DETAIL' | 'LOGIN' | 'SEARCH_
 
 export interface AdminDraft {
   title: string;
+  excerpt: string; // Adicionado para o campo de resumo/subtítulo
   category: string;
   content: string;
   author: string;

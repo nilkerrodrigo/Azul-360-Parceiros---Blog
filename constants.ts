@@ -1,10 +1,10 @@
 import { Article, Category, Banner, User } from './types';
 
 export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'cred-news', name: 'Cred News', icon: 'fa-newspaper', description: 'Notícias e novidades do setor' },
-  { id: 'tecnologia', name: 'Tecnologia', icon: 'fa-laptop-code', description: 'Inovação no turismo' },
-  { id: 'gestao', name: 'Gestão', icon: 'fa-chart-line', description: 'Eficiência operacional' },
-  { id: 'mercados', name: 'Mercados', icon: 'fa-globe-americas', description: 'Tendências e oportunidades' },
+  { id: 'cred-news', name: 'Cred News', icon: 'fa-newspaper', description: 'Notícias exclusivas e atualizações do mercado de crédito e turismo.' },
+  { id: 'tecnologia', name: 'Tecnologia', icon: 'fa-microchip', description: 'Inovação, ferramentas digitais e o futuro das agências.' },
+  { id: 'gestao', name: 'Gestão', icon: 'fa-clipboard-list', description: 'Estratégias para otimizar a administração e processos do seu negócio.' },
+  { id: 'mercado', name: 'Mercado', icon: 'fa-chart-line', description: 'Análises de tendências, economia e oportunidades de crescimento.' },
 ];
 
 export const INITIAL_BANNERS: Banner[] = [
@@ -52,7 +52,7 @@ export const INITIAL_ARTICLES: Article[] = [
     title: 'O poder da personalização nas vendas de pacotes',
     excerpt: 'Entenda por que oferecer experiências únicas é a chave para fidelizar clientes no cenário atual.',
     content: 'Em um mundo cada vez mais conectado, o consumidor busca mais do que...',
-    category: 'Mercados',
+    category: 'Mercado',
     imageUrl: 'https://picsum.photos/800/600?random=2',
     author: 'Carlos Souza',
     date: '22 Out, 2023',
