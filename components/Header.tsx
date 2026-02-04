@@ -114,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onSearch }) =>
             <button onClick={() => onSearch('Cred News')} className="hover:text-azul-900 transition">Cred News</button>
             <button onClick={() => onSearch('Tecnologia')} className="hover:text-azul-900 transition">Tecnologia</button>
             <button onClick={() => onSearch('Gestão')} className="hover:text-azul-900 transition">Gestão</button>
-            <button onClick={() => onSearch('Mercados')} className="hover:text-azul-900 transition">Mercados</button>
+            <button onClick={() => onSearch('Mercado')} className="hover:text-azul-900 transition">Mercado</button>
           </div>
         </div>
       )}
