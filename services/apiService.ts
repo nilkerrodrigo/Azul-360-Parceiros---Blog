@@ -1,4 +1,4 @@
-import { Article, Category, Banner, User } from '../types';
+import { Article, Category, Banner, User, Comment } from '../types';
 import { supabase } from '../supabaseClient';
 
 // --- Articles ---
@@ -24,6 +24,7 @@ export const getArticles = async (): Promise<Article[]> => {
         author: d.author,
         date: d.publish_date,
         views: d.views,
+        likes: d.likes || 0,
         featured: false
     }));
 };
@@ -39,7 +40,8 @@ export const addArticle = async (article: Omit<Article, 'id'>) => {
             image_url: article.imageUrl,
             author: article.author,
             publish_date: article.date,
-            views: 0
+            views: 0,
+            likes: 0
         }])
         .select();
 
@@ -60,6 +62,12 @@ export const incrementArticleView = async (id: string) => {
     // Usa uma RPC (Stored Procedure) para incremento atômico
     const { error } = await supabase.rpc('increment_views', { row_id: id });
     if (error) console.error("Error incrementing view:", error);
+};
+
+export const incrementArticleLike = async (id: string) => {
+    // Usa uma RPC (Stored Procedure) para incremento atômico de likes
+    const { error } = await supabase.rpc('increment_likes', { row_id: id });
+    if (error) console.error("Error incrementing like:", error);
 };
 
 // --- Banners ---
@@ -153,6 +161,43 @@ export const deleteCategory = async (id: string) => {
         .delete()
         .eq('id', id);
     if (error) throw error;
+};
+
+// --- Comments ---
+
+export const getComments = async (articleId: string): Promise<Comment[]> => {
+    const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('article_id', articleId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+    }
+
+    return data.map((d: any) => ({
+        id: d.id,
+        articleId: d.article_id,
+        authorName: d.author_name,
+        content: d.content,
+        createdAt: new Date(d.created_at).toLocaleDateString('pt-BR')
+    }));
+};
+
+export const addComment = async (articleId: string, authorName: string, content: string) => {
+    const { data, error } = await supabase
+        .from('comments')
+        .insert([{
+            article_id: articleId,
+            author_name: authorName,
+            content: content
+        }])
+        .select();
+
+    if (error) throw error;
+    return data;
 };
 
 // --- Users & Auth ---
