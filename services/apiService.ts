@@ -23,7 +23,7 @@ export const getArticles = async (): Promise<Article[]> => {
         imageUrl: d.image_url,
         author: d.author,
         date: d.publish_date,
-        views: d.views,
+        views: d.views || 0,
         likes: d.likes || 0,
         featured: false
     }));
@@ -59,15 +59,50 @@ export const deleteArticle = async (id: string) => {
 };
 
 export const incrementArticleView = async (id: string) => {
-    // Usa uma RPC (Stored Procedure) para incremento atômico
     const { error } = await supabase.rpc('increment_views', { row_id: id });
     if (error) console.error("Error incrementing view:", error);
 };
 
 export const incrementArticleLike = async (id: string) => {
-    // Usa uma RPC (Stored Procedure) para incremento atômico de likes
     const { error } = await supabase.rpc('increment_likes', { row_id: id });
     if (error) console.error("Error incrementing like:", error);
+};
+
+// --- Comments ---
+
+export const getComments = async (articleId: string): Promise<Comment[]> => {
+    const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('article_id', articleId)
+        .order('created_at', { ascending: false }); // Mais recentes primeiro
+
+    if (error) {
+        console.error("Error fetching comments", error);
+        return [];
+    }
+
+    return data.map((c: any) => ({
+        id: c.id,
+        articleId: c.article_id,
+        authorName: c.author_name,
+        content: c.content,
+        createdAt: new Date(c.created_at).toLocaleDateString('pt-BR')
+    }));
+};
+
+export const addComment = async (articleId: string, authorName: string, content: string) => {
+    const { data, error } = await supabase
+        .from('comments')
+        .insert([{
+            article_id: articleId,
+            author_name: authorName,
+            content: content
+        }])
+        .select();
+    
+    if (error) throw error;
+    return data;
 };
 
 // --- Banners ---
@@ -137,12 +172,20 @@ export const getCategories = async (): Promise<Category[]> => {
         return [];
     }
 
-    return data.map((d: any) => ({
-        id: d.id,
-        name: d.name,
-        icon: d.icon,
-        description: d.description
-    }));
+    // Deduplicação no Frontend: Garante que nomes repetidos não apareçam na tela
+    const uniqueCategories = new Map();
+    data.forEach((d: any) => {
+        if (!uniqueCategories.has(d.name)) {
+            uniqueCategories.set(d.name, {
+                id: d.id,
+                name: d.name,
+                icon: d.icon,
+                description: d.description
+            });
+        }
+    });
+
+    return Array.from(uniqueCategories.values());
 };
 
 export const addCategory = async (category: Omit<Category, 'id'>) => {
@@ -163,49 +206,9 @@ export const deleteCategory = async (id: string) => {
     if (error) throw error;
 };
 
-// --- Comments ---
-
-export const getComments = async (articleId: string): Promise<Comment[]> => {
-    const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('article_id', articleId)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching comments:', error);
-        return [];
-    }
-
-    return data.map((d: any) => ({
-        id: d.id,
-        articleId: d.article_id,
-        authorName: d.author_name,
-        content: d.content,
-        createdAt: new Date(d.created_at).toLocaleDateString('pt-BR')
-    }));
-};
-
-export const addComment = async (articleId: string, authorName: string, content: string) => {
-    const { data, error } = await supabase
-        .from('comments')
-        .insert([{
-            article_id: articleId,
-            author_name: authorName,
-            content: content
-        }])
-        .select();
-
-    if (error) throw error;
-    return data;
-};
-
 // --- Users & Auth ---
 
 export const getUsers = async (): Promise<User[]> => {
-    // Supabase não expõe lista de usuários publicamente por segurança.
-    // Retornamos apenas o usuário atual se logado, ou lista vazia.
-    // Para gerenciar múltiplos usuários, use o painel do Supabase em Authentication.
     const { data: { user } } = await supabase.auth.getUser();
     if (user && user.email) {
         return [{ id: user.id, name: 'Admin', email: user.email }];
@@ -214,8 +217,6 @@ export const getUsers = async (): Promise<User[]> => {
 };
 
 export const addUser = async (name: string, email: string, password: string) => {
-    // Em client-side só podemos criar usuário via SignUp, que loga automaticamente ou pede confirmação de email.
-    // A melhor forma de adicionar admins extras é convidá-los pelo painel do Supabase.
     throw new Error("Por segurança, convide novos administradores através do Painel do Supabase (Authentication > Invite).");
 };
 
@@ -252,7 +253,6 @@ export const uploadImage = async (file: File): Promise<string> => {
 
     if (error) throw error;
 
-    // Get Public URL
     const { data: { publicUrl } } = supabase
         .storage
         .from('blog-images')

@@ -67,10 +67,13 @@ export const generateExcerpt = async (content: string): Promise<string> => {
         const ai = getAI();
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview', // Flash é mais rápido e suficiente para resumos
-            contents: `Resuma o seguinte texto em um parágrafo curto e vendedor (máximo 140 caracteres) para atrair cliques, em Português: ${content.substring(0, 1500)}...`
+            contents: `Crie um resumo curto e cativante (máximo 160 caracteres, em Português) do seguinte artigo para ser usado como subtítulo ou prévia em um blog: ${content.substring(0, 1500)}...`
         });
-        return response.text || "";
+        const generatedExcerpt = response.text || "";
+        // Remove aspas se a IA devolver o texto entre aspas
+        return generatedExcerpt.replace(/^"|"$/g, '').trim(); 
     } catch (e) {
+        console.error("Error generating excerpt:", e);
         return "Resumo automático indisponível.";
     }
 }
